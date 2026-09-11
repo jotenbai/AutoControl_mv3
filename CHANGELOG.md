@@ -156,6 +156,14 @@
   uses a different path and paints correctly. After a successful
   restore, every restored tab is reloaded once (except `about:blank`)
   so the page actually appears. Back/forward history is kept.
+- **Open URL + Switch to right tab landed one tab too far.** Opening a
+  URL to the right of the current tab, then switching to the right tab,
+  activated the *old* right-hand neighbor instead of the just-opened
+  page. The service worker caches the window/tab list for 1.5 seconds
+  (needed for fast wheel-spin switching), but that list is what "right
+  tab" is computed from — so a tab created inside that window was
+  invisible to the next action. Creating, closing, or moving a tab now
+  invalidates the cache, and the next action sees the real order.
 - **Pin/unpin (and mute) actions only worked on every other click** —
   the action read the tab state from the extension's internal tab cache,
   which is refreshed by an asynchronous window re-enumeration gated by a
