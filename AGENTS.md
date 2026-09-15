@@ -21,8 +21,12 @@ This includes comments, log strings, and error messages in `sw.js`,
 - **`ext-mv2/`** = the ORIGINAL MV2 extension (upstream baseline,
   `manifest_version: 2`, background page `file63.html`). **DO NOT EDIT** — it
   is the reference for the port.
-- **Repo root** = `AGENTS.md`, `README.md`, `CHANGELOG.md` + the folders
-  below; all other docs live in `Docs/`, test artifacts in `Test/`.
+- **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
+  `CHANGELOG.md`, `PRIVACY.md`, `package.ps1` (zips `mv3-build/` only),
+  `webstore-description.txt` (store-style EN/ZH/JA copy; not a CWS listing),
+  `My-AutoControl-Settings.acs` (example backup — Restore **replaces**),
+  plus the folders below; other docs live in `Docs/`, tests in `Test/`.
+  This fork develops on `origin/master` independently of `upstream`.
 - **`Docs/`** = `FEATURES-MV3.md` (status & open items §7),
   `MV2-MV3-coverage.md`, `NATIVE_PROTOCOL.md`, `DECODE.md`,
   `SCRIPTING-API-SUMMARY.md`, `SUMMARY-SCRIPTING-API.md`.
@@ -1007,13 +1011,14 @@ otherwise the next session starts from zero. Concretely:
    also a good place), `Docs/FEATURES-MV3.md` (feature status & port gaps —
    single source of truth; broken items are tracked in §7 with
    section links) or `AGENTS.md` (gotchas), whichever fits.
-1b. **Keep `README.md` (the install guide) current** — it is user-facing and
-   must stay in sync with reality: extension toggles and their names
-   (chrome://extensions → Details → "Allow user scripts" / "Allow access to
-   file URLs"), the manual native-install steps (`AutoControl_native\` →
-   `%UserProfile%\AppData\Local\AutoControl`), and the verification
-   checklist. Whenever the native-install TODO is fixed or any toggle/path
-   changes, update README.md in the same change.
+1b. **Keep `README.md` (the install guide) current** — bilingual EN then
+   简体中文, usage-first: Load unpacked → `mv3-build/` (keep that folder),
+   in-app native Install (`AutoControl_native\` exes are optional after
+   that), Restore from `.acs` is **Replace not Add**, chrome:// Open URL
+   works. Toggles: "Allow user scripts" / "Allow access to file URLs".
+   Manual fallback: `AutoControl_native\` →
+   `%UserProfile%\AppData\Local\AutoControl`. Do not present `package.ps1`
+   as an end-user install step.
 2. **Every fix ships with a doc line** — at minimum a bullet in the relevant
    doc + a session-memory note (`/memories/session/autocontrol-mv3.md`):
    symptom → root cause → fix → rebuild status.

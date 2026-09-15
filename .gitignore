@@ -1,2 +1,19 @@
-# VS Code
+# Packaged extension artifacts
+*.zip
+*.crx
+*.pem
+
+# Editors
+.cursor/
 .vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local CRX extract (obfuscated MV2 reference — do not copy as new code)
+legacy/

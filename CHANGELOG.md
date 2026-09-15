@@ -9,6 +9,15 @@
 
 ## Unreleased — MV3 port
 
+### Changed
+
+- This fork's `master` carries the 2026-09 action and HUD fixes without
+  waiting on upstream merge. Daily unpacked use is `master` (`local/pending`
+  dropped). User-facing layout: bilingual README, `PRIVACY.md`, developer
+  `package.ps1` (zips `mv3-build/` only), `webstore-description.txt`, example
+  settings `My-AutoControl-Settings.acs` (Restore from file **replaces** the
+  current config).
+
 ### Added
 
 #### Architecture
