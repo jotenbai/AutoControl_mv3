@@ -12,9 +12,9 @@ Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). C
 
 ### Why use this
 
-**AutoControl is to Chrome what [PowerToys Keyboard Manager](https://learn.microsoft.com/windows/powertoys/keyboard-manager) is to Windows:** Chrome itself cannot remap its own global shortcuts or add mouse gestures the way AutoControl did. This port keeps that model — a small extension plus the **original Windows native engine**.
+Chrome cannot remap its own global shortcuts or add mouse gestures. AutoControl does both: a small extension plus the **original Windows native engine**. If you have used [PowerToys Keyboard Manager](https://learn.microsoft.com/windows/powertoys/keyboard-manager), it is a similar idea, but for Chrome.
 
-A practical difference versus other shortcut extensions: **Open URL works for `chrome://` pages** (History, Bookmarks, Extensions, …).
+The bigger difference versus other shortcut extensions: your shortcuts and gestures still **work on Chrome’s own pages** (`chrome://` — History, Bookmarks, Extensions, …). Ordinary extensions cannot do that.
 
 The Chrome Web Store listing is only so people can install it easily. If it infringes, it will be taken down.
 
@@ -107,9 +107,9 @@ If the pane never finishes: reload the extension; confirm both exes and `AutoCon
 
 ### 为什么用这个
 
-**AutoControl 之于 Chrome，就像 [PowerToys 键盘管理器](https://learn.microsoft.com/zh-cn/windows/powertoys/keyboard-manager) 之于 Windows：** Chrome 自己绑不了原版那种全局快捷键和鼠标手势。本移植沿用：扩展 + **原版 Windows 原生引擎**。
+Chrome 自己改不了全局快捷键，也加不了鼠标手势。AutoControl 用扩展加上**原版 Windows 原生引擎**来做这件事。用过 [PowerToys 键盘管理器](https://learn.microsoft.com/zh-cn/windows/powertoys/keyboard-manager) 的话，感觉类似，只不过作用对象是 Chrome。
 
-和多数快捷键扩展相比，这里可以**打开 `chrome://` 页面**（历史记录、书签、扩展程序等）。
+更关键的是：快捷键和手势在 Chrome 自带页面（`chrome://`，例如历史记录、书签、扩展程序）上也能生效。普通扩展做不到这一点。
 
 放到网上应用店只是为了方便大家安装。如果构成侵权，会下架。
 
