@@ -22,7 +22,8 @@ This includes comments, log strings, and error messages in `sw.js`,
   own copies of the core `file*.js`/`res/` — independent from
   `reference/ext-mv2/`.
 - **`webstore/`** = store listing copy that is **not** zipped: `privacy.md`,
-  `webstore-description.txt`, `webstore-permissions.txt`, `screenshots/`.
+  `description.txt`, `permissions.txt`, `screenshots/` (flat files such as
+  `global1.jpg`; no language subfolders).
 - **`reference/`** = **unmodified snapshots of `upstream/master`**. Do **not**
   edit these trees; refresh by checking out Alex’s folders again.
   - **`reference/README.md`** = links to Alex’s live docs mirror and
