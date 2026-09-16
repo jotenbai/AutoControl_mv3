@@ -5,8 +5,8 @@
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
-// mv3-build/ holds the extension sources; this diagnostic lives in Test/.
-const MV3 = path.join(__dirname, '..', 'mv3-build');
+// extension/ holds the extension sources; this diagnostic lives in Test/.
+const MV3 = path.join(__dirname, '..', 'extension');
 
 // --- audio stubs ---
 // NOTE: Chrome's AudioNode.connect() returns the destination node (non-spec

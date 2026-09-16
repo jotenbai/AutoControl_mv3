@@ -4,14 +4,14 @@
 // userAPI dispatch (exactly 1 answering listener), and the port-gap
 // expectations tracked in FEATURES-MV3.md §7 (playAudio, saveUrl DNR,
 // file:// gate, _9w inert loading, browserAction alias).
-// §N references in comments point to Docs/FEATURES-MV3.md.
-// Run: node mv3-build/mh_test.js   (cwd-independent; paths are __dirname-based)
+// §N references in comments point to reference/Docs/FEATURES-MV3.md.
+// Run: node extension/mh_test.js   (cwd-independent; paths are __dirname-based)
 'use strict';
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 
-const MV3 = __dirname; // mv3-build/
+const MV3 = __dirname; // extension/
 // ACS settings snapshot lives in ../Test/ (renamed 2026-08-05)
 const ACS = path.join(__dirname, '..', 'Test', 'AutoControl-settings-test.acs');
 
@@ -450,12 +450,12 @@ setTimeout(() => {
   // directly (Zero spawns it with arg "152" from %LocalAppData%). Both exes
   // must be present in the install folder.
   try {
-    const manifestPath = path.join(__dirname, '..', 'AutoControl_native', 'AutoControl.manifest');
+    const manifestPath = path.join(__dirname, '..', 'reference', 'AutoControl_native', 'AutoControl.manifest');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     check('zero-proxy host manifest', manifest.name === 'hrich.autocontrol' && manifest.path === 'AutoControlZero.exe',
       'path=' + manifest.path);
-    const zeroOk = fs.existsSync(path.join(__dirname, '..', 'AutoControl_native', 'AutoControlZero.exe'));
-    const fullOk = fs.existsSync(path.join(__dirname, '..', 'AutoControl_native', 'AutoCtrl_2025.4.22.0.exe'));
+    const zeroOk = fs.existsSync(path.join(__dirname, '..', 'reference', 'AutoControl_native', 'AutoControlZero.exe'));
+    const fullOk = fs.existsSync(path.join(__dirname, '..', 'reference', 'AutoControl_native', 'AutoCtrl_2025.4.22.0.exe'));
     check('zero-proxy: both exes present in install folder', zeroOk && fullOk,
       'Zero=' + zeroOk + ' full=' + fullOk);
   } catch(e) {
@@ -1278,7 +1278,7 @@ setTimeout(() => {
     'TOOLBAR-BUTTON-Mute-MV3', 'TOOLBAR-BUTTON-Pin-MV3', 'TOOLBAR-BUTTON-Unload-MV3'];
   let btnsOk = true, missing = [];
   for (const d of btnDirs) {
-    const p = path.join(__dirname, '..', 'Toolbar-buttons', d, 'bgPage.js');
+    const p = path.join(__dirname, '..', 'reference', 'Toolbar-buttons', d, 'bgPage.js');
     if (!fs.existsSync(p)) { missing.push(d + ' (no file)'); btnsOk = false; continue; }
     const b = fs.readFileSync(p, 'utf8');
     const f = b.includes('chrome.runtime.onStartup.addListener( requestInit )') &&
@@ -2252,6 +2252,111 @@ vm.runInContext(`
     sw.includes('[AC-MV3] _6t type 90');
   check('gesture display: configLoaded re-pushes type 90 after native handshake (2026-09-11)',
     ok, 'repush=' + ok);
+}
+
+// B56. This fork's empty mouseGest defaults to middle-button / 4 dirs
+// (MV2 was rightButton / 8). Saved presets are unchanged; B50 still compiles
+// rightButton explicitly to pin the RMB strip.
+{
+  const f3 = fs.readFileSync(path.join(MV3, 'file3.js'), 'utf8');
+  const f30 = fs.readFileSync(path.join(MV3, 'file30.js'), 'utf8');
+  const f68 = fs.readFileSync(path.join(MV3, 'file68.js'), 'utf8');
+  const srcOk = f3.includes('a.preset||"middleButton"') &&
+    f3.includes('null==a.dirPrecision&&(a.dirPrecision=4)') &&
+    !f3.includes('a.preset||"rightButton"') &&
+    f30.includes('a.preset||"middleButton"') &&
+    f30.includes('a.dirPrecision||4') &&
+    f68.includes('attr("dirs",d||4)');
+  const rt = vm.runInContext(`(() => {
+    const t = _0p({});
+    const s = JSON.stringify(t);
+    return {
+      hasMid: s.includes('"eventId":4'),
+      hasRmb: s.includes('"eventId":2'),
+      hasMidUp: s.includes('"eventId":1028')
+    };
+  })()`, ctx);
+  check('empty mouseGest defaults to middle button / 4 dirs (2026-09-16)',
+    srcOk && rt.hasMid && rt.hasMidUp && !rt.hasRmb,
+    'src=' + srcOk + ' mid=' + rt.hasMid + ' midUp=' + rt.hasMidUp + ' rmb=' + rt.hasRmb);
+}
+
+// B57. Store listing branding (2026-09-16): AutoControl_mv3 locales +
+// package.ps1 strips the original key. Unpacked manifest still has `key`.
+{
+  const mf = JSON.parse(fs.readFileSync(path.join(MV3, 'manifest.json'), 'utf8'));
+  const locEn = path.join(MV3, '_locales', 'en', 'messages.json');
+  const locZh = path.join(MV3, '_locales', 'zh_CN', 'messages.json');
+  const locJa = path.join(MV3, '_locales', 'ja', 'messages.json');
+  const pack = fs.readFileSync(path.join(MV3, '..', 'package.ps1'), 'utf8');
+  const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  const msgs = JSON.parse(fs.readFileSync(locEn, 'utf8'));
+  const ok = mf.default_locale === 'en' &&
+    mf.name === '__MSG_extName__' &&
+    mf.description === '__MSG_extDescription__' &&
+    mf.version === '1.0' &&
+    typeof mf.key === 'string' && mf.key.length > 80 &&
+    fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
+    msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
+    pack.includes('strips the original') &&
+    pack.includes('[regex]::Replace') &&
+    sw.includes('function __acEnsureNativeOrigin') &&
+    sw.includes('function __acOfferNativeOriginPatcher') &&
+    sw.includes('/forbidden/i') &&
+    sw.includes('Allow-AutoControl_mv3-native.bat');
+  check('store branding: AutoControl_mv3 locales + pack zip strips original key (2026-09-16)',
+    ok, 'ver=' + mf.version + ' locale=' + mf.default_locale + ' hasKey=' + !!mf.key);
+}
+
+// B58. fullscreenWins toggle read stale `_cd[g].state` (2026-09-16).
+// Same class as pin/mute B52: `_4d` decided enter vs exit from the SW
+// window cache, which `_Rf` only refreshes every 1500ms. After entering
+// fullscreen the cache still said "normal", so the next gesture issued
+// windows.update({state:"fullscreen"}) again (no-op) until the enum
+// caught up. FIX: windows.get the live state first, then update, and
+// write f.state from the result (restore `_oa` already did).
+{
+  const f95 = fs.readFileSync(path.join(MV3, 'file95.js'), 'utf8');
+  const b = fs.readFileSync(path.join(MV3, 'sw_core_bundle.js'), 'utf8');
+  const srcOk = f95.includes('AC-MV3 FIX (2026-09-16): fullscreen toggle') &&
+    f95.includes('_Yk.windows.get(g,e)') &&
+    f95.includes('"fullscreen"==w.state') &&
+    !f95.includes('"fullscreen"==f.state') &&
+    f95.includes('f.state=u.state');
+  const bundledOk = b.includes('AC-MV3 FIX (2026-09-16): fullscreen toggle') &&
+    b.includes('_Yk.windows.get(g,e)') &&
+    b.includes('"fullscreen"==w.state');
+  check('file95 _4d: fullscreen toggle reads FRESH windows.get state (stale-_cd enum-cache fix, 2026-09-16)',
+    srcOk && bundledOk, 'src=' + srcOk + ' bundled=' + bundledOk);
+}
+
+// B59. First-install sample actions (2026-09-16). defaults.acs is packed
+// with the extension; sw.js seeds trigActList+mouseGest BEFORE connect()
+// when storage is empty. Must NEVER write natHostInstalled (that skips
+// the native Install UI). Existing non-empty profiles are not overwritten.
+{
+  const defPath = path.join(MV3, 'defaults.acs');
+  const rootAcs = path.join(MV3, '..', 'My-AutoControl-Settings.acs');
+  const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  let def = {}, root = {};
+  try { def = JSON.parse(fs.readFileSync(defPath, 'utf8')); } catch (e) { def = { _err: String(e) }; }
+  try { root = JSON.parse(fs.readFileSync(rootAcs, 'utf8')); } catch (e) { root = { _err: String(e) }; }
+  const titles = (def.trigActList || []).map(x => x && x[1] && x[1].title);
+  const acsOk = fs.existsSync(defPath) &&
+    !('natHostInstalled' in def) &&
+    !('natHostInstalled' in root) &&
+    Array.isArray(def.trigActList) && def.trigActList.length === 8 &&
+    def.mouseGest && def.mouseGest.triggers && def.mouseGest.triggers.preset === 'middleButton' &&
+    titles.includes('switch to previous tab') &&
+    titles.includes('open newtab') &&
+    JSON.stringify(def) === JSON.stringify(root);
+  const swOk = sw.includes('function __acSeedDefaultSettings') &&
+    sw.includes("getURL('defaults.acs')") &&
+    sw.includes('__acSeedDefaultSettings(() => { connect(); })') &&
+    sw.includes('Never writes natHostInstalled') &&
+    !/payload\.natHostInstalled/.test(sw);
+  check('first-install defaults.acs seeded before native connect; no natHostInstalled (2026-09-16)',
+    acsOk && swOk, 'acs=' + acsOk + ' sw=' + swOk + ' n=' + (def.trigActList || []).length);
 }
 
 // ---------- summary ----------

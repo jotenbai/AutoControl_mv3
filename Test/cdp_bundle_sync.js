@@ -2,7 +2,7 @@
 // source-file changes (file13/file91/file62_mv3/file10/file48).
 'use strict';
 const fs = require('fs');
-const bnd = fs.readFileSync('mv3-build/sw_core_bundle.js', 'utf8');
+const bnd = fs.readFileSync('extension/sw_core_bundle.js', 'utf8');
 const checks = {
   'file13 60s timeout (6E4)': bnd.includes('saveAs:c},6E4'),
   'file13 CB-TIMEOUT->""': bnd.includes('"CB-TIMEOUT"==e?"":e'),

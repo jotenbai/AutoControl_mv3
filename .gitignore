@@ -14,6 +14,3 @@
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Local CRX extract (obfuscated MV2 reference — do not copy as new code)
-legacy/

@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "AutoControl_mv3",
+    "description": "商店与 chrome://extensions 显示名称"
+  },
+  "extShortName": {
+    "message": "AutoControl_mv3",
+    "description": "工具栏短名称"
+  },
+  "extDescription": {
+    "message": "非官方 MV3 移植：快捷键、鼠标手势，并可打开 chrome:// 页面。",
+    "description": "Chrome 网上应用店短描述（不超过 132 字符）"
+  },
+  "actionTitle": {
+    "message": "AutoControl_mv3 设置",
+    "description": "工具栏按钮提示"
+  }
+}

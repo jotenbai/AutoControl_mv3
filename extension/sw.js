@@ -1397,6 +1397,95 @@
   // ======== CONNECTION MANAGEMENT ========
 
   /**
+   * After a successful native handshake, append this extension's origin to
+   * AutoControl.manifest allowed_origins (type 250 write). No-op when the
+   * original AutoControl ID is already listed. For a Chrome Web Store ID
+   * that was never in the installer whitelist, connectNative fails with
+   * "forbidden" BEFORE this can run — see __acOfferNativeOriginPatcher.
+   */
+  function __acEnsureNativeOrigin() {
+    try {
+      if (typeof _If !== 'function' || typeof _4u !== 'function') return;
+      const origin = 'chrome-extension://' + chrome.runtime.id + '/';
+      _If('AutoControl.manifest', 'text')(r => {
+        if (!r || r.error || typeof r.content !== 'string') return;
+        let j;
+        try { j = JSON.parse(r.content); } catch (e) { return; }
+        const list = Array.isArray(j.allowed_origins) ? j.allowed_origins.slice() : [];
+        if (list.indexOf(origin) >= 0) {
+          console.log('[AC-MV3] Native origin already allowed:', origin);
+          return;
+        }
+        j.allowed_origins = list.concat([origin]);
+        _4u('AutoControl.manifest', JSON.stringify(j))(res => {
+          console.log('[AC-MV3] Native origin added', origin, 'write=', res);
+        });
+      });
+    } catch (e) {
+      console.warn('[AC-MV3] Native origin patch skipped:', e && e.message);
+    }
+  }
+
+  /**
+   * connectNative rejected this ID (CWS / unpacked without the original
+   * key). Chrome cannot write %LocalAppData%\\AutoControl itself — download
+   * a tiny .bat the user runs once (same class of click as Native-Component).
+   */
+  function __acOfferNativeOriginPatcher(reason) {
+    try {
+      if (self.__acOriginPatcherOffered) return;
+      self.__acOriginPatcherOffered = true;
+      const origin = 'chrome-extension://' + chrome.runtime.id + '/';
+      console.warn('[AC-MV3] Native host forbade this ID. Run the Allow-*.bat then reload.', reason || '', origin);
+      const bat = [
+        '@echo off',
+        'setlocal',
+        'set "MAN=%LOCALAPPDATA%\\AutoControl\\AutoControl.manifest"',
+        'if not exist "%MAN%" (',
+        '  echo Native host not installed yet. Run Native-Component.exe first.',
+        '  pause',
+        '  exit /b 1',
+        ')',
+        'powershell -NoProfile -ExecutionPolicy Bypass -Command ^',
+        '  "$p=$env:LOCALAPPDATA+\'\\AutoControl\\AutoControl.manifest\';" ^',
+        '  "$j=Get-Content -Raw -Encoding UTF8 $p | ConvertFrom-Json;" ^',
+        '  "$o=\'' + origin + '\';" ^',
+        '  "$list=@($j.allowed_origins);" ^',
+        '  "if ($list -contains $o) { Write-Host Already allowed $o; exit 0 }" ^',
+        '  "$j.allowed_origins=$list+$o;" ^',
+        '  "($j | ConvertTo-Json -Compress) | Set-Content -Encoding UTF8 $p;" ^',
+        '  "Write-Host Added $o"',
+        'echo Reload AutoControl_mv3 on chrome://extensions.',
+        'pause',
+        ''
+      ].join('\r\n');
+      const url = 'data:application/octet-stream;base64,' + btoa(unescape(encodeURIComponent(bat)));
+      const dl = () => {
+        if (!chrome.downloads || !chrome.downloads.download) return;
+        chrome.downloads.download({
+          url,
+          filename: 'Allow-AutoControl_mv3-native.bat',
+          saveAs: true
+        }, () => void chrome.runtime.lastError);
+      };
+      if (chrome.downloads && chrome.downloads.download) dl();
+      else if (chrome.permissions && chrome.permissions.request) {
+        chrome.permissions.request({ permissions: ['downloads'] }, ok => { if (ok) dl(); });
+      }
+      try {
+        chrome.notifications.create('ac-native-origin', {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('AutoCtrl/logo32.png'),
+          title: 'AutoControl_mv3',
+          message: 'This extension ID is not in the native-host whitelist. Save and run Allow-AutoControl_mv3-native.bat, then reload.'
+        }, () => void chrome.runtime.lastError);
+      } catch (e2) {}
+    } catch (e) {
+      console.warn('[AC-MV3] Origin patcher offer failed:', e && e.message);
+    }
+  }
+
+  /**
    * Open the native messaging port (bumps the connection generation and
    * starts the handshake).
    */
@@ -1417,12 +1506,16 @@
         // chrome.runtime.lastError. Both are EXPECTED here: the host exits
         // during Emergency Repair (we taskkill the engine and drop the port)
         // and when the host is not installed.
+        const discErr = (chrome.runtime.lastError && chrome.runtime.lastError.message) || '';
         void chrome.runtime.lastError;
+        if (/forbidden/i.test(discErr)) __acOfferNativeOriginPatcher(discErr);
         onDisc(gen);
       });
       portConnectedOk = false;
       if (chrome.runtime.lastError) {
-        console.warn("[AC-MV3] Connect error:", chrome.runtime.lastError.message);
+        const cErr = chrome.runtime.lastError.message;
+        console.warn("[AC-MV3] Connect error:", cErr);
+        if (/forbidden/i.test(cErr || '')) __acOfferNativeOriginPatcher(cErr);
         scheduleRetry();
       } else {
         console.log("[AC-MV3] Port created, starting handshake...");
@@ -1922,6 +2015,7 @@
     try { chrome.storage.local.remove("__acAutoReloaded"); } catch(e) {}
 
     console.log("[AC-MV3] Native connected successfully!");
+    __acEnsureNativeOrigin();
     // Broadcast nativeConfigReady above (inside the storage.get callback) is the
     // primary signal telling the page to run window enum + config chain.
   }
@@ -2077,7 +2171,7 @@
                   return;
                 }
                 console.error("[AC-MV3] Engine still missing after unpack — giving up. Check Task Manager for orphaned AutoCtrl_*.exe / AutoControlZero.exe processes (duplicates crash the fresh engine).");
-                console.error("[AC-MV3] Manual fallback: copy AutoControl_native\\AutoCtrl_2025.4.22.0.exe into %UserProfile%\\AppData\\Local\\AutoControl\\ and reload the extension (README S2.1).");
+                console.error("[AC-MV3] Manual fallback: copy reference\\AutoControl_native\\AutoCtrl_2025.4.22.0.exe into %UserProfile%\\AppData\\Local\\AutoControl\\ and reload the extension (README S2.1).");
                 if (port) { try { port.disconnect(); } catch(e) {} port = null; }
                 connected = false;
               });
@@ -2197,10 +2291,10 @@
     // AutoControlZero.exe + manifest + the HKCU NativeMessagingHosts registry
     // key (a plain folder copy alone does NOT register the host). The engine
     // AutoCtrl_2025.4.22.0.exe is NOT deployed by the installer - copy it
-    // from AutoControl_native by hand, then reload the extension.
+    // from reference/AutoControl_native by hand, then reload the extension.
     console.warn("[AC-MV3] Native connection failed (" + reason + "). " +
       "Install steps: in the extension choose 'Reinstall native component' twice " +
-      "(second time 'Repair installation'), then copy AutoControl_native\\" +
+      "(second time 'Repair installation'), then copy reference\\AutoControl_native\\" +
       "AutoCtrl_2025.4.22.0.exe into %UserProfile%\\AppData\\Local\\AutoControl\\ " +
       "and reload the extension (see README.md S2).");
     scheduleRetry();
@@ -3784,7 +3878,37 @@
     }
   });
 
-  connect();
+  // AC-MV3 (2026-09-16): first-run sample actions (extension/defaults.acs).
+  // Seed only when storage has no trigActList yet (or it is empty) AND we
+  // have not already seeded. Never writes natHostInstalled — that flag would
+  // skip the native Install UI. Existing profiles with actions are untouched.
+  // Runs BEFORE connect() so the first type-60 handshake sees the samples.
+  function __acSeedDefaultSettings(done) {
+    const finish = () => { try { done(); } catch (e) {} };
+    try {
+      chrome.storage.local.get(['trigActList', '__acDefaultsSeeded'], r => {
+        const hasActs = Array.isArray(r.trigActList) && r.trigActList.length > 0;
+        if (r.__acDefaultsSeeded || hasActs) { finish(); return; }
+        fetch(chrome.runtime.getURL('defaults.acs'))
+          .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+          .then(data => {
+            const payload = { __acDefaultsSeeded: true };
+            if (data && data.trigActList) payload.trigActList = data.trigActList;
+            if (data && data.mouseGest) payload.mouseGest = data.mouseGest;
+            chrome.storage.local.set(payload, () => {
+              try { console.log('[AC-MV3] seeded built-in default actions'); } catch (e) {}
+              finish();
+            });
+          })
+          .catch(err => {
+            try { console.warn('[AC-MV3] default settings seed failed:', err && err.message); } catch (e) {}
+            finish();
+          });
+      });
+    } catch (e) { finish(); }
+  }
+
+  __acSeedDefaultSettings(() => { connect(); });
 
   // Self-waker: calling an extension API every 20s resets the SW idle timer
   // (Chrome 110+: "calling an extension API resets this timer"). Together with

@@ -1,11 +1,12 @@
 {
-  "name": "AutoControl: Keyboard shortcuts, Mouse gestures",
-  "short_name": "AutoControl",
-  "version": "2025.4.22",
+  "name": "__MSG_extName__",
+  "short_name": "__MSG_extShortName__",
+  "version": "1.0",
   "manifest_version": 3,
-  "description": "Customize keyboard shortcuts and hotkeys, Mouse gestures, Wheel gestures, Rocker gestures, Bookmark shortcuts, Joystick actions.",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
   "minimum_chrome_version": "140",
-  "homepage_url": "https://www.autocontrol.app",
+  "homepage_url": "https://github.com/jotenbai/AutoControl_mv3",
   "options_ui": {
     "page": "main.html",
     "open_in_tab": true
@@ -51,7 +52,7 @@
       "24": "AutoCtrl/logo24.png",
       "32": "AutoCtrl/logo32.png"
     },
-    "default_title": "AutoControl Configuration"
+    "default_title": "__MSG_actionTitle__"
   },
   "icons": {
     "16": "AutoCtrl/logo16.png",

@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "AutoControl_mv3",
+    "description": "Store listing and chrome://extensions name"
+  },
+  "extShortName": {
+    "message": "AutoControl_mv3",
+    "description": "Toolbar / overflow short name"
+  },
+  "extDescription": {
+    "message": "Unofficial MV3 port: keyboard shortcuts, mouse gestures, and Open URL for chrome:// pages.",
+    "description": "Chrome Web Store short description (keep under 132 characters)"
+  },
+  "actionTitle": {
+    "message": "AutoControl_mv3 settings",
+    "description": "Toolbar button tooltip"
+  }
+}

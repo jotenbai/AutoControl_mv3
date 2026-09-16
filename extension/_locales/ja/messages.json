@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "AutoControl_mv3",
+    "description": "ストアと chrome://extensions の表示名"
+  },
+  "extShortName": {
+    "message": "AutoControl_mv3",
+    "description": "ツールバー用の短い名前"
+  },
+  "extDescription": {
+    "message": "非公式 MV3 移植。キーボードショートカット、マウスジェスチャ、chrome:// ページを開けます。",
+    "description": "Chrome ウェブストアの短い説明（132 文字以内）"
+  },
+  "actionTitle": {
+    "message": "AutoControl_mv3 の設定",
+    "description": "ツールバーボタンのツールチップ"
+  }
+}

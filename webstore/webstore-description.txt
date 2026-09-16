@@ -1,0 +1,80 @@
+===== ENGLISH =====
+⚡ AutoControl_mv3 — unofficial Manifest V3 port (keyboard shortcuts + mouse gestures)
+
+The original AutoControl listing was removed from the Chrome Web Store. This is a community port with a new name and a new store ID so it is not an update of that item.
+
+⚠️ Not the original product. Not affiliated with the original authors. Settings UI stays in English.
+
+✨ What still works
+• Keyboard shortcuts and mouse gestures through the original Windows native engine
+• Open URL — including chrome:// pages (history, bookmarks, extensions)
+• Tab actions: switch, pin, mute, reopen closed tab
+• Run Script / ACtl on normal web pages (enable “Allow user scripts”)
+• Settings import / export (.acs)
+
+🔧 Setup
+1. Install from the Chrome Web Store
+2. Open the extension → Install the native component → run the installer
+3. If Chrome says the native host is forbidden: run Allow-AutoControl_mv3-native.bat, then reload
+4. Details → turn on “Allow user scripts”
+5. A few sample shortcuts are already there (Ctrl+Tab last-used tab, middle-button gestures, Ctrl+T new tab to the right). Edit them in settings. Restore from a .acs file still uses Replace, not Add.
+
+📌 Why this port
+Chrome Manifest V3 killed the always-on background page. The original team stopped. This build runs the same obfuscated logic in a service worker plus shims. Some hover-region conditions are broken in Chrome 148+ (native hit-test, MV2 and MV3 alike).
+
+🔒 Privacy
+Settings stay on your PC. Usage telemetry is off unless you enable it in Advanced Options. Policy: webstore/privacy.md on GitHub (jotenbai/AutoControl_mv3).
+
+===== 简体中文 =====
+⚡ AutoControl_mv3 — 非官方 Manifest V3 移植（快捷键 + 鼠标手势）
+
+原版 AutoControl 已从网上应用店下架。本扩展用新名称、新商店 ID，不是原条目的更新。
+
+⚠️ 不是原厂产品，与原作者无关。设置界面仍为英文。
+
+✨ 还能做的事
+• 经原版 Windows 原生组件处理快捷键与鼠标手势
+• 打开网址，包括 chrome:// 页面（历史、书签、扩展程序）
+• 标签操作：切换、固定、静音、重新打开已关闭标签
+• 在普通网页上运行脚本 / ACtl（需打开「允许用户脚本」）
+• 导入 / 导出设置（.acs）
+
+🔧 安装
+1. 从 Chrome 网上应用店安装
+2. 打开扩展 → Install 原生组件 → 运行安装程序
+3. 若提示 native host forbidden：运行 Allow-AutoControl_mv3-native.bat，然后重载
+4. 详细信息里打开「允许用户脚本」
+5. 安装后已有示例快捷键（Ctrl+Tab 上次标签、中键手势、Ctrl+T 在右侧新建标签）。可在 settings 里改。从 .acs 还原仍是替换而不是追加。
+
+📌 为什么要移植
+Manifest V3 拿掉了常驻后台页，原团队停更。本构建把同一套混淆逻辑跑在 Service Worker 上。Chrome 148+ 的悬停区域条件失效（原生无障碍命中测试问题，MV2/MV3 一样）。
+
+🔒 隐私
+设置只存在本机。匿名用量默认关闭，可在高级选项里打开。政策见 GitHub 仓库 webstore/privacy.md（jotenbai/AutoControl_mv3）。
+
+===== 日本語 =====
+⚡ AutoControl_mv3 — 非公式 Manifest V3 移植（キーボードショートカット + マウスジェスチャ）
+
+元の AutoControl は Chrome ウェブストアから削除されました。新しい名前と新しいストア ID を使うコミュニティ移植であり、旧アイテムの更新ではありません。
+
+⚠️ 公式製品ではありません。元の作者とは無関係です。設定 UI は英語のままです。
+
+✨ できること
+• 元の Windows ネイティブエンジンによるショートカットとマウスジェスチャ
+• URL を開く（chrome:// の履歴・ブックマーク・拡張機能ページを含む）
+• タブ操作：切り替え、ピン留め、ミュート、閉じたタブを開き直す
+• 通常のウェブページで Run Script / ACtl（「ユーザースクリプトを許可」が必要）
+• 設定のインポート / エクスポート（.acs）
+
+🔧 セットアップ
+1. Chrome ウェブストアからインストール
+2. 拡張機能を開く → ネイティブコンポーネントを Install → インストーラを実行
+3. native host forbidden と出たら Allow-AutoControl_mv3-native.bat を実行してから再読み込み
+4. 詳細で「ユーザースクリプトを許可」をオン
+5. 初回インストールですでにサンプルショートカットが入っています（Ctrl+Tab で直前のタブ、中ボタンジェスチャ、Ctrl+T で右隣に新しいタブ）。設定画面で編集できます。.acs からの復元は追加ではなく置き換えです。
+
+📌 移植の理由
+Manifest V3 で常駐バックグラウンドページがなくなり、元チームは開発を止めました。同じ難読化ロジックをサービスワーカーで動かしています。Chrome 148 以降のホバー領域条件はネイティブ側のヒットテスト不具合で効きません（MV2 も同じ）。
+
+🔒 プライバシー
+設定はパソコン内に保存。匿名テレメトリは既定オフ。方針は GitHub の webstore/privacy.md（jotenbai/AutoControl_mv3）。

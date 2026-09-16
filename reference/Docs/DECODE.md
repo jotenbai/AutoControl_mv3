@@ -141,9 +141,6 @@
 | `_Wi` | Current action | Which action type is executing |
 | `_Fk` | Ready flag | System ready flag |
 | `_Pw` | Watchdog | Detects stuck actions |
-| `_Mh` | loadUrls / Open URL (file8) | Creates tabs via `_6a` (`tabs.create`) or `_3g` (`windows.create`); `tabPos:"after"` = to the right of current tab |
-| `_6a(props, cb)` | tabs.create wrapper (file34) | `_Yk.tabs.create` then marks about:blank in `_Vg`. SW wrap `__acWrapChromeUiCreate` reloads chrome:// after create (2026-09-11) |
-| `_3g(props, cb)` | windows.create wrapper (file34) | Same about:blank mark; Open URL `tabPos:"newWin"` |
 
 ## Config Loading (file47.js)
 | Obfuscated | Meaning | Description |
@@ -383,8 +380,7 @@
 | `broadcast(msg)` | Sends to all extension tabs + runtime |
 | `_live` flag | Added to live (non-buffered) broadcasts |
 | `stripRightButtonBlocks()` | **v6**: softens block:true→false under key 2 AND 1026 in type 60 |
-| `scheduleGestureEsc()` | **v7**: 20ms after a gesture sends type 300 `[27,1051]` (Esc) |
-| `__acWrapChromeUiCreate()` | After importScripts: wrap `tabs.create` + `windows.create`; reload chrome:// / edge:// immediately (skip about:blank / newtab). Gesture Open URL chrome:// is held until after RBTN-ESC (`__acTriggerOpensChromeUi`, ~35ms) so Esc does not hit the new WebUI (2026-09-11, B55) |
+| `scheduleGestureEsc()` | **v7**: 50ms after a gesture sends type 300 `[27,1051]` (Esc) |
 | `lastRaw760Time` | TS of last type 760 — gesture fingerprint for v7 |
 | `handshakeSk` | `_Sk` at handshake (daily offset) |
 | `startupSent` | Flag: type 21 sent (after config chain) |
@@ -396,7 +392,7 @@
 |-------|-------|-----|-------------|
 | 50 | `_Qw` | → | Trigger event injection `{evtId, trigInstId}` |
 | 55 | `_vh` | → | Emergency repair / diagnostics |
-| 90 | `_Xa` | → | Gesture-display HUD icons (`_6t`; not toolbar buttons) |
+| 90 | `_Xa` | → | Icons (toolbar buttons) |
 | 100/110 | `_fk`/`_Cf` | → | Gesture trail draw/move |
 | 136 | `_Mu` | → | Tab replaced `[oldId,newId]` (tabs.onReplaced) |
 | 140 | `_5t` | → | Tab state `{tabId,win,time,popup}` (`_Sh`) |

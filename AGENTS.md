@@ -1,68 +1,69 @@
 # AGENTS.md — AutoControl MV3 port (working notes)
 
 > **What this file is**: rules + current gotchas for working on the MV3 port.
-> It is a working reference for agents/contributors, not a changelog.
+> It is a working reference for agents/contributors.
 >
-> - Fix chronology & public record → `CHANGELOG.md` (Keep a Changelog)
-> - Open items → `Docs/FEATURES-MV3.md` §7
-> - Feature/port status → `Docs/FEATURES-MV3.md` (§7 gaps, §8 impossible in MV3)
-> - Coverage overview (plain language) → `Docs/MV2-MV3-coverage.md`
-> - Protocol reference → `Docs/NATIVE_PROTOCOL.md`; symbol map → `Docs/DECODE.md`
-> - Historical docs (closed bug reports, session handoffs) → `Docs/archive/`
+> - Upstream snapshot (do **not** edit) → `reference/` (`Docs/`, `ext-mv2/`, …)
+> - Upstream changelog → https://github.com/Alex-302/AutoControl_mv3/blob/master/CHANGELOG.md
+>   (this fork does not keep a local CHANGELOG; later history is `git log`)
+> - This fork’s gotchas / open items → this file (`AGENTS.md`)
+> - Upstream feature tables (read-only) → `reference/Docs/FEATURES-MV3.md`
 
 ## Language rule (code)
 
-**ALL code and comments in `mv3-build/` MUST be in ENGLISH.**
+**ALL code and comments in `extension/` MUST be in ENGLISH.**
 This includes comments, log strings, and error messages in `sw.js`,
 `file42.js`, `sw_prelude.js`, and the bundle sources. Code files — English only.
 
 ## Repository layout
 
-- **`ext-mv2/`** = the ORIGINAL MV2 extension (upstream baseline,
-  `manifest_version: 2`, background page `file63.html`). **DO NOT EDIT** — it
-  is the reference for the port.
-- **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
-  `CHANGELOG.md`, `PRIVACY.md`, `package.ps1` (zips `mv3-build/` only),
-  `webstore-description.txt` (store-style EN/ZH/JA copy; not a CWS listing),
-  `My-AutoControl-Settings.acs` (example backup — Restore **replaces**),
-  plus the folders below; other docs live in `Docs/`, tests in `Test/`.
-  This fork develops on `origin/master` independently of `upstream`.
-- **`Docs/`** = `FEATURES-MV3.md` (status & open items §7),
-  `MV2-MV3-coverage.md`, `NATIVE_PROTOCOL.md`, `DECODE.md`,
-  `SCRIPTING-API-SUMMARY.md`, `SUMMARY-SCRIPTING-API.md`.
-  **`Docs/archive/`** = historical docs:
-  `✅ BUG-REPORT-runScript-duplicates.md` (closed 2026-08-05),
-  `HANDOFF-2026-08-06-unstaged.md`, `RIGHT-CLICK-ISSUE.md`.
-- **`Test/`** = `SCRIPTING-API-TEST.js` (in-browser API self-test) +
-  `AutoControl-settings-test.acs` (settings snapshot for mh_test).
-- **`AutoControl_native/`** = native host (manifest + decrypted exes).
-- **`mv3-build/`** = the MV3 port (SW-brain). **This is where ALL work
+- **`extension/`** = the MV3 port (SW-brain). **This is where ALL work
   happens.** Load this folder in Chrome as an unpacked extension. Contains its
-  own copies of the core `file*.js`/`res/` — independent from `ext-mv2/`.
-- **`Toolbar-buttons/`** = auxiliary builds/assets (MV2/MV3 pairs: base,
-  Duplicate, Mute, Pin, Unload).
+  own copies of the core `file*.js`/`res/` — independent from
+  `reference/ext-mv2/`.
+- **`webstore/`** = store listing copy that is **not** zipped: `privacy.md`,
+  `webstore-description.txt`, `webstore-permissions.txt`, `screenshots/`.
+- **`reference/`** = **unmodified snapshots of `upstream/master`**. Do **not**
+  edit these trees; refresh by checking out Alex’s folders again.
+  - **`reference/README.md`** = links to Alex’s live docs mirror and
+    upstream changelog.
+  - **`reference/ext-mv2/`** = original MV2 extension.
+  - **`reference/Docs/`** = Alex’s port notes + `autocontrol.app-site/`.
+  - **`reference/AutoControl_native/`** = decrypted native host (repo copy;
+    the store ID is **not** patched here. A CWS ID that is “forbidden”
+    gets `Allow-AutoControl_mv3-native.bat` from the service worker.
+  - **`reference/Toolbar-buttons/`** = auxiliary MV2/MV3 button builds.
+- **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
+  `package.ps1` (zips `extension/` only;
+  **strips the original `key`** so CWS gets a new ID),
+  `My-AutoControl-Settings.acs` (same payload as `extension/defaults.acs`),
+  `Test/` (API self-test + ACS snapshot).
+  This fork develops on `origin/master` independently of `upstream`.
+  Store listing name is **AutoControl_mv3** (`extension/_locales`),
+  draft/store ID `ifjogpfnljedincfpelmhaljnllegckm`.
+  Unpacked `manifest.json` still contains the original `key` so local
+  native messaging keeps the old ID until the store public key is pasted.
 - NOTE: the old loose MV3 shims at the repo root were REMOVED (cleanup
-  commit) — the working copies live in `mv3-build/`. Do not recreate them.
+  commit) — the working copies live in `extension/`. Do not recreate them.
 
 ## Contribution rules (post-task)
 
 - You MUST verify your change with the harness:
-  `node mv3-build/mh_test.js` — expect `SUMMARY: N pass, 0 known gaps,
+  `node extension/mh_test.js` — expect `SUMMARY: N pass, 0 known gaps,
   0 FAIL` (exit 1 on FAIL). Filter: `2>&1 | Select-String -Pattern
   "PASS|FAIL|GAP|SUMMARY"`.
 - You MUST keep `mh_test.js` current — every new fix ships with a smoke test
   (`[PASS]`/`[FAIL]`/`[GAP ]`/`[FIXED?]`). When a `[GAP ]` stops reproducing,
-  update `Docs/FEATURES-MV3.md` §7.
+  update this file (do **not** patch `reference/Docs/`).
 - After editing ANY file from the bundle list (see Bundle build), you MUST
   rebuild `sw_core_bundle.js` and run the arrow sanity check.
 - After editing `Test/SCRIPTING-API-TEST.js` you MUST re-copy its content
   into the RUN SCRIPT editor (extension reload does NOT update saved
   scripts).
-- You MUST document findings: protocol facts → `Docs/NATIVE_PROTOCOL.md`;
-  decoded symbols → `Docs/DECODE.md`; gotchas → this file;
-  feature status → `Docs/FEATURES-MV3.md`; user-facing record →
-  `CHANGELOG.md`.
-- You MUST keep code in `mv3-build/` English-only (see Language rule).
+- You MUST document findings in **this file** (`AGENTS.md`). Do **not** edit
+  `reference/` (upstream snapshot). User-facing install/UX → `README.md`
+  (do **not** recreate `CHANGELOG.md` at the repo root).
+- You MUST keep code in `extension/` English-only (see Language rule).
 - When the project structure changes, keep the Repository layout section
   valid.
 
@@ -194,7 +195,7 @@ This includes comments, log strings, and error messages in `sw.js`,
 
 ## Test harnesses (used repeatedly — keep them working)
 
-- **`mv3-build/mh_test.js`** — Node `vm` harness loading `sw_core_bundle.js`
+- **`extension/mh_test.js`** — Node `vm` harness loading `sw_core_bundle.js`
   with stubbed `chrome`/DOM globals. Validates: bundle loads, `_Yk===chrome`,
   z-handler completeness (15 base types), prelude browserAction→action alias
   and onClicked listener count, `_As` scheme gate (file://), `_9w` inert
@@ -204,7 +205,7 @@ This includes comments, log strings, and error messages in `sw.js`,
   `_Yh` vs `self._Yh`), XHR-shim headers smoke, `_Yh` callback-style smoke,
   and userAPI dispatch (must be exactly 1 answering listener). Output
   `[PASS]`/`[FAIL]`/`[GAP ]`/`[FIXED?]`; exit 1 on FAIL. Path-independent
-  (`__dirname`). Current: 98 pass / 0 gaps / 0 FAIL.
+  (`__dirname`). Current: 102 pass / 0 gaps / 0 FAIL.
 - **`Test/SCRIPTING-API-TEST.js`** — in-browser self-test of the whole ACtl
   API (23 tests), run via RUN SCRIPT on a normal page. 23/23 stable. Every
   failure prints an unmissable banner (`[AC-API-TEST: FAIL]`) + a final
@@ -212,7 +213,7 @@ This includes comments, log strings, and error messages in `sw.js`,
   `ACtl.on("tabLoadEnd")` on a fresh tab can exceed 15s on the VM (warm runs
   ~0.4s). `getFile` on a local file needs the "Allow access to file URLs"
   toggle.
-- **`Docs/SCRIPTING-API-SUMMARY.md`** — API reference vs Chrome capabilities
+- **`reference/Docs/SCRIPTING-API-SUMMARY.md`** — API reference vs Chrome capabilities
   (status table, CSP rules, known limitations).
 
 ## MV3 architecture (SW-brain)
@@ -260,7 +261,7 @@ PS 5.1 `Get-Content` WITHOUT `-Encoding` reads files as ANSI (Windows-1252) →
 UTF-8 symbols become mojibake. **ALWAYS use UTF8 explicitly.**
 
 ```text
-Set-Location "mv3-build"
+Set-Location "extension"
 $f=@('sw_prelude.js','file67.js','file91.js','file10.js','file32.js','file17.js','file13.js','file34_mv3.js','file56.js','file57.js','file74.js','file47.js','file73.js','file70.js','file25.js','file8.js','file95.js','file15.js','file48.js','file77.js','file37.js','file3.js','file24.js','file18.js','file41.js','file45.js','file50.js','file52.js','file59.js','file89.js','file93.js','file62_mv3.js','mv3_native_shim.js','file26.js','file49.js')
 $o=foreach($x in $f){";`n/* ===== $x ===== */`n"+(Get-Content -Raw -Encoding UTF8 $x)}
 Set-Content sw_core_bundle.js $o -Encoding UTF8 -NoNewline
@@ -317,7 +318,7 @@ guards (both check the bundle).
 ## Known pitfalls / fixes (current gotchas)
 
 Each bullet: symptom → cause → fix → pointer. Dates = fix chronology (kept
-intentionally). Full round-by-round narratives live in `Docs/archive/`
+intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
 (closed bug reports, session handoffs) and the git history.
 
 ### Native lifecycle
@@ -606,6 +607,18 @@ intentionally). Full round-by-round narratives live in `Docs/archive/`
   toggle; LMB after RMB passes. ⚠ Bundle build list: file77.js MUST be
   AFTER file48.js (the sw.js comment list is authoritative now — the old
   comment missed file77 and a rebuild dropped it → the B-tests failed).
+- **Fullscreen toggle needed a pause before exit (FIXED 2026-09-16, B58)** —
+  middle-button ↓ (fullscreenWins `mode:-1`) entered fullscreen, then the
+  same gesture did nothing for ~1.5s. ROOT CAUSE: `_4d` (file95) read
+  `_cd[g].state` — the SW window cache, refreshed only by `_Fu` behind
+  `_Rf`'s 1500ms `__acEnumCacheMs`. After `windows.update({state:
+  "fullscreen"})` the cache still said `"normal"`, so the next toggle
+  issued fullscreen again (no-op). Unlike restore `_oa`, `_4d` also never
+  wrote `f.state` from the update result. FIX: toggle mode `windows.get`s
+  the live state first (same class as pin/mute B52) and writes `f.state`
+  from the callback. Chrome may still drop a second `windows.update
+  ({state})` while the fullscreen animation is in flight (hundreds of ms).
+  mh_test B58. Bundle rebuild required (file95).
 - **Open URL + Switch to right tab skipped the new tab (FIXED 2026-09-11,
   B54)** — "opens the URL to the right, then jumps one extra tab". ROOT
   CAUSE: `_Rf`'s 1500ms `windows.getAll` cache. `loadUrls` `tabs.create`
@@ -639,6 +652,24 @@ intentionally). Full round-by-round narratives live in `Docs/archive/`
   broken; testing shows the gate never fires regardless of region. Do NOT
   use hover conditions in test triggers on Chrome 148+; the UI still offers
   them (they worked pre-148).
+- **This fork's empty-config gesture default is middle button / 4 dirs**
+  (2026-09-16, B56) — MV2 `_0p` used `preset||"rightButton"` and the
+  Options UI used `dirPrecision||8`. Fresh storage (`mouseGest:{}`) now
+  compiles `_ir` (middle, eventId 4) and `_Jp` fills `dirPrecision:4`.
+  Saved `rightButton` / 8 profiles are untouched. B50 still passes an
+  explicit `rightButton` preset when testing the RMB strip. Do not revert
+  those fallbacks to MV2 without updating B56.
+- **Built-in sample actions on first install (2026-09-16, B59)** —
+  `extension/defaults.acs` (same payload as repo-root
+  `My-AutoControl-Settings.acs`) is packed with the extension. sw.js
+  `__acSeedDefaultSettings` runs BEFORE `connect()`: if `trigActList` is
+  missing/empty AND `__acDefaultsSeeded` is unset, it writes `trigActList` +
+  `mouseGest` from that file. NEVER seed `natHostInstalled` (that would skip
+  the native Install UI). Existing profiles with actions are not overwritten
+  on update. Emptying every action in the UI does not re-seed (flag stays).
+  `storage.local.clear()` removes the flag → next SW start re-seeds. Keep
+  the two ACS files in sync when editing the sample. mh_test B59. NO bundle
+  rebuild (sw.js).
 
 ### UI / settings
 
@@ -1005,18 +1036,18 @@ This codebase is minified/obfuscated (`_qe`, `_md`, `_6s`, `_wj`, ...). Any
 logic that is uncovered, changed, or worked around MUST be documented —
 otherwise the next session starts from zero. Concretely:
 
-1. **New findings go into the docs immediately** — do not postpone "until it
-   stabilizes": add to `Docs/NATIVE_PROTOCOL.md` (protocol), `Docs/DECODE.md`
-   (deobfuscation map — the file `/memories/repo/deobfuscation-map.md` is
-   also a good place), `Docs/FEATURES-MV3.md` (feature status & port gaps —
-   single source of truth; broken items are tracked in §7 with
-   section links) or `AGENTS.md` (gotchas), whichever fits.
+1. **New findings go into `AGENTS.md` immediately** — do not postpone "until it
+   stabilizes", and do **not** edit `reference/Docs/` (that tree is an
+   unmodified `upstream/master` snapshot). Protocol facts, decoded symbols,
+   and this fork’s feature gaps all land in this file. Alex’s tables remain
+   readable at `reference/Docs/FEATURES-MV3.md` / `NATIVE_PROTOCOL.md` /
+   `DECODE.md`.
 1b. **Keep `README.md` (the install guide) current** — bilingual EN then
-   简体中文, usage-first: Load unpacked → `mv3-build/` (keep that folder),
-   in-app native Install (`AutoControl_native\` exes are optional after
+   简体中文, usage-first: Load unpacked → `extension/` (keep that folder),
+   in-app native Install (`reference/AutoControl_native\` exes are optional after
    that), Restore from `.acs` is **Replace not Add**, chrome:// Open URL
    works. Toggles: "Allow user scripts" / "Allow access to file URLs".
-   Manual fallback: `AutoControl_native\` →
+   Manual fallback: `reference/AutoControl_native\` →
    `%UserProfile%\AppData\Local\AutoControl`. Do not present `package.ps1`
    as an end-user install step.
 2. **Every fix ships with a doc line** — at minimum a bullet in the relevant
@@ -1026,8 +1057,8 @@ otherwise the next session starts from zero. Concretely:
    (`_qe=1` LMB, `_md=2` RMB, `_4e=60` config, `_zs` reads script code from
    `_if`, `_Mi` fires `_Gu`/`_B` subscriptions after storage write, etc.).
 4. **Protocol changes**: any new/changed native message type, field, or
-   handshake step goes into `Docs/NATIVE_PROTOCOL.md` with the exact wire
-   format.
+   handshake step goes into **this file** with the exact wire format (do not
+   patch `reference/Docs/NATIVE_PROTOCOL.md`).
 5. **Bundle rebuild notes**: state the bundle size after each rebuild in the
    session memory (quick sanity: marker present? size changed?).
 6. **🔴 HIGH PRIORITY — deobfuscation & protocol DISCOVERIES and
@@ -1036,16 +1067,17 @@ otherwise the next session starts from zero. Concretely:
    or observed something new (or spotted a wrong/outdated doc entry) but
    ended without updating the map is INCOMPLETE. Every session MUST land its
    findings AND fix any inaccuracies before it ends:
-   - new decoded symbols/functions → `Docs/DECODE.md` (symbol tables) —
-     including CORRECTIONS of wrong entries (e.g. `_9k` is
+   - new decoded symbols/functions → **this file** (and, if useful, a
+     session memory) — including CORRECTIONS of wrong entries (e.g. `_9k` is
      `localStorage.setItem/removeItem`, NOT `chrome.storage.local.set`);
    - new semantic facts about the native (message meaning, side effects,
-     lifecycle) → `Docs/NATIVE_PROTOCOL.md` with the exact wire format.
+     lifecycle) → **this file** with the exact wire format.
    Example of a MUST-document finding: "type 55 does NOT restart the engine —
    it is an ACK; the MV2 restart came from the background-page reload (port
    drop → Zero exit on EOF → fresh Zero spawns a fresh engine)" is now
-   NATIVE_PROTOCOL §18, and `_co`/`_ze`/`_nk`/`_Cr`/`_j`/`_nt`/`_2u` +
-   55/451 are in DECODE.md.
+   recorded here and in Alex’s `reference/Docs/NATIVE_PROTOCOL.md` §18
+   (snapshot; do not edit). `_co`/`_ze`/`_nk`/`_Cr`/`_j`/`_nt`/`_2u` +
+   55/451 are in Alex’s `DECODE.md`.
 
 ## Where to look for docs
 
@@ -1060,8 +1092,9 @@ otherwise the next session starts from zero. Concretely:
 - `scripting.executeScript` (no matchAboutBlank):
   <https://developer.chrome.com/docs/extensions/reference/api/scripting>
 - This repo's own docs: `README.md` (install guide — user-facing),
-  `Docs/NATIVE_PROTOCOL.md`, `Docs/DECODE.md`, `Docs/archive/RIGHT-CLICK-ISSUE.md`,
-  `Docs/FEATURES-MV3.md`, `CHANGELOG.md`.
+  `reference/Docs/NATIVE_PROTOCOL.md`, `reference/Docs/DECODE.md`, `reference/Docs/archive/RIGHT-CLICK-ISSUE.md`,
+  `reference/Docs/FEATURES-MV3.md`. Upstream changelog:
+  https://github.com/Alex-302/AutoControl_mv3/blob/master/CHANGELOG.md
 
 ## Native protocol (short)
 
@@ -1069,4 +1102,4 @@ Native host `hrich.autocontrol`; messages `{type, content, callback}`,
 callback `e+l` (l from ext id), echo reply type 710. Key types: 10=file check,
 20=init, 21=startup, 60=config (mapKey=keyId+22025), 67=monitors, 72=switch
 states, 300=SendInput, 750=trigger, 760=raw gesture, 905=keepalive, 920=ping.
-Details: `Docs/NATIVE_PROTOCOL.md`.
+Details: `reference/Docs/NATIVE_PROTOCOL.md`.

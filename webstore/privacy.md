@@ -1,8 +1,8 @@
-# Privacy policy — AutoControl MV3 (unofficial port)
+# Privacy policy — AutoControl_mv3 (unofficial port)
 
-This repository is an unofficial Manifest V3 port of the original AutoControl Chrome extension. It is not affiliated with the original AutoControl authors. The original site is dead; a documentation mirror lives at [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/).
+This repository is an unofficial Manifest V3 port of the original AutoControl Chrome extension. It is **not** affiliated with the original AutoControl authors and is **not** an update of the old Chrome Web Store item. The original site is dead; a documentation mirror lives at [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/).
 
-This build is intended to be loaded unpacked from `mv3-build/`. It has not been submitted to the Chrome Web Store.
+Store listing (when published) and source: [github.com/jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). This policy URL is what you paste into the Chrome Web Store “Privacy policy” field.
 
 ## What the extension does
 
