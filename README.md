@@ -16,7 +16,7 @@ Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). C
 
 A practical difference versus other shortcut extensions: **Open URL works for `chrome://` pages** (History, Bookmarks, Extensions, …).
 
-The Chrome Web Store listing is only so people can install it in one click. This fork is not a product, not a brand, and is not listed for fame or profit.
+The Chrome Web Store listing is only so people can install it easily. If it infringes, it will be taken down.
 
 ### Install (Chrome Web Store — preferred)
 
@@ -111,7 +111,7 @@ If the pane never finishes: reload the extension; confirm both exes and `AutoCon
 
 和多数快捷键扩展相比，这里可以**打开 `chrome://` 页面**（历史记录、书签、扩展程序等）。
 
-放到网上应用店，只是图个安装方便，不是卖东西，也不是为了出名赚钱。
+放到网上应用店只是为了方便大家安装。如果构成侵权，会下架。
 
 ### 安装（Chrome 网上应用店 — 推荐）
 
