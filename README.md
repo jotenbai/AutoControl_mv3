@@ -87,7 +87,6 @@ If the pane never finishes: reload the extension; confirm both exes and `AutoCon
 | `Test/`                       | In-browser API test and CDP helpers.                                                                         |
 | `AGENTS.md`                   | Working notes for people changing the port.                                                                  |
 | `extension/defaults.acs`      | First-install sample actions (packed with the extension).                                                    |
-| `My-AutoControl-Settings.acs` | Same payload as `defaults.acs` (Restore backup).                                                             |
 
 ### What this is (and is not)
 
@@ -183,7 +182,6 @@ If the pane never finishes: reload the extension; confirm both exes and `AutoCon
 | `Test/`                       | 页内 API 自测和 CDP 脚本                                                                   |
 | `AGENTS.md`                   | 给改移植代码的人看的工作笔记                                                               |
 | `extension/defaults.acs`      | 首次安装写入的示例动作（打进扩展包）                                                       |
-| `My-AutoControl-Settings.acs` | 与 `defaults.acs` 相同（Restore 备份）                                                     |
 
 ### 这是什么（以及不是什么）
 

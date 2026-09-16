@@ -2336,20 +2336,16 @@ vm.runInContext(`
 // the native Install UI). Existing non-empty profiles are not overwritten.
 {
   const defPath = path.join(MV3, 'defaults.acs');
-  const rootAcs = path.join(MV3, '..', 'My-AutoControl-Settings.acs');
   const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
-  let def = {}, root = {};
+  let def = {};
   try { def = JSON.parse(fs.readFileSync(defPath, 'utf8')); } catch (e) { def = { _err: String(e) }; }
-  try { root = JSON.parse(fs.readFileSync(rootAcs, 'utf8')); } catch (e) { root = { _err: String(e) }; }
   const titles = (def.trigActList || []).map(x => x && x[1] && x[1].title);
   const acsOk = fs.existsSync(defPath) &&
     !('natHostInstalled' in def) &&
-    !('natHostInstalled' in root) &&
     Array.isArray(def.trigActList) && def.trigActList.length === 8 &&
     def.mouseGest && def.mouseGest.triggers && def.mouseGest.triggers.preset === 'middleButton' &&
     titles.includes('switch to previous tab') &&
-    titles.includes('open newtab') &&
-    JSON.stringify(def) === JSON.stringify(root);
+    titles.includes('open newtab');
   const swOk = sw.includes('function __acSeedDefaultSettings') &&
     sw.includes("getURL('defaults.acs')") &&
     sw.includes('__acSeedDefaultSettings(() => { connect(); })') &&

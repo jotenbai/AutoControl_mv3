@@ -36,7 +36,6 @@ This includes comments, log strings, and error messages in `sw.js`,
 - **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
   `package.ps1` (zips `extension/` only;
   **strips the original `key`** so CWS gets a new ID),
-  `My-AutoControl-Settings.acs` (same payload as `extension/defaults.acs`),
   `Test/` (API self-test + ACS snapshot).
   This fork develops on `origin/master` independently of `upstream`.
   Store listing name is **AutoControl_mv3** (`extension/_locales`),
@@ -660,16 +659,14 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   explicit `rightButton` preset when testing the RMB strip. Do not revert
   those fallbacks to MV2 without updating B56.
 - **Built-in sample actions on first install (2026-09-16, B59)** —
-  `extension/defaults.acs` (same payload as repo-root
-  `My-AutoControl-Settings.acs`) is packed with the extension. sw.js
+  `extension/defaults.acs` is packed with the extension. sw.js
   `__acSeedDefaultSettings` runs BEFORE `connect()`: if `trigActList` is
   missing/empty AND `__acDefaultsSeeded` is unset, it writes `trigActList` +
   `mouseGest` from that file. NEVER seed `natHostInstalled` (that would skip
   the native Install UI). Existing profiles with actions are not overwritten
   on update. Emptying every action in the UI does not re-seed (flag stays).
-  `storage.local.clear()` removes the flag → next SW start re-seeds. Keep
-  the two ACS files in sync when editing the sample. mh_test B59. NO bundle
-  rebuild (sw.js).
+  `storage.local.clear()` removes the flag → next SW start re-seeds.
+  mh_test B59. NO bundle rebuild (sw.js).
 
 ### UI / settings
 
