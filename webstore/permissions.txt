@@ -1,63 +1,7 @@
-===== Chrome Web Store permission justifications (paste per field) =====
-Remote code: select 「不，我并未使用远程代码」.
-The extension JS, WASM and native binaries all ship in the ZIP. User Run Script / ACtl source is stored in chrome.storage on the device. Fetching a page to save it, or importing a settings JSON the user chose, is not executing remotely hosted extension code.
-If the form is already 「是」, change it to 「否」 before submit.
-
------ nativeMessaging -----
-Used only to talk to the local Windows native host “hrich.autocontrol” (AutoControlZero.exe + engine in %LocalAppData%\AutoControl). Global keyboard shortcuts, mouse gestures, SendInput and local file IO cannot run in a service worker; they run in that host. No remote server. The host is installed by the user from binaries bundled in the extension.
-
------ storage -----
-Stores the user’s triggers, actions, scripts, gesture options and UI flags in chrome.storage.local so they survive browser restarts. No account. Nothing is synced to our servers.
-
------ unlimitedStorage -----
-A full settings backup includes many actions, icons (data URLs) and user scripts. This can exceed Chrome’s 10 MB storage.local quota. unlimitedStorage keeps large local configs from being silently truncated.
-
------ contextMenus -----
-Adds an “Emergency repair” item (and optional switch-state items) on the toolbar-icon context menu so the user can restart the native connection if hotkeys stop. Not used for page context spam or ads.
-
------ system.display -----
-Reads monitor bounds and DPI so window/popup actions (custom menus, toasts) are placed on the correct display. The native host also receives this layout. Display geometry only, not screenshot capture.
-
------ idle -----
-chrome.idle detects when the browser is idle or locked so we can pause native keepalive pings and run user-defined “on idle / on active” triggers. Query interval is the Chrome idle API, not keystroke logging.
-
------ scripting -----
-Injects the in-page script bridge and optional site “Import/View settings” helper on pages the user is using. Needed because Manifest V3 has no persistent background page. Not used to inject ads or unrelated third-party scripts.
-
------ alarms -----
-chrome.alarms keeps the Manifest V3 service worker alive and sends a periodic native keepalive so global hotkeys still work after Chrome hibernates the worker. No scheduling of remote jobs.
-
------ favicon -----
-The chrome://favicon access is used only to show site icons in the custom tab-switcher menu. Favicons are cached locally for that UI. Not used to fetch arbitrary URLs.
-
------ tabs -----
-Query / create / update / reload tabs so actions can open a URL (including chrome://history, bookmarks, extensions), switch, pin, mute, or reopen tabs. Tab URL/title are read to evaluate user-defined conditions. Not used for browsing-history export or analytics by default.
-
------ offscreen -----
-An offscreen document hosts (1) the sandboxed iframe that runs background “Run Script” actions and (2) Web Audio / speech for “Play audio”. Service workers have no DOM or AudioContext. No hidden extra windows for tracking.
-
------ userScripts -----
-Official Manifest V3 API to run user-authored “Run Script” / ACtl code in the USER_SCRIPT world (works on strict-CSP sites). Code comes from the user’s saved settings, not from our servers. The user must also enable “Allow user scripts” on chrome://extensions.
-
------ declarativeNetRequestWithHostAccess -----
-Only to set a Referer header on the extension’s own Save-URL fetch (MV2 used blocking webRequest, which MV3 removed). Session rules are added for that download and removed afterwards. Not used to block or redirect the user’s normal browsing.
-
------ bookmarks -----
-Optional. Requested only if the user creates or imports an action that reads/writes a bookmark folder. Not requested at install for users who never use those actions.
-
------ sessions -----
-Optional. Used only for “Reopen closed tab” (chrome.sessions.restore). Requested when the user enables that action. Recently-closed session data stays in Chrome; we do not upload it.
-
------ notifications -----
-Optional. Shows completion/error toasts (for example Save URL finished, or a native-hook conflict). “Don’t show again” is respected. Not used for promotional notifications.
-
------ downloads -----
-Optional. Used when a Save-URL action uses chrome.downloads, and (rarely) to save a small local helper script that adds this extension’s ID to the native-host whitelist. Files go to the user’s Downloads folder. Not used to download unrelated software in the background.
-
------ Host permissions (<all_urls>) -----
-Triggers, mouse gestures and optional Run Script must run on whichever page the user is looking at. URL conditions and “Open URL” destinations are defined by the user and include chrome:// and arbitrary https sites, so a fixed host list is not possible. We do not scrape the web or inject ads. Host access is used only to (1) match the active tab against the user’s conditions, (2) inject the script bridge when the user runs a script, (3) open/save the URL the user configured.
-
-===== 中文粘贴版（控制台是中文时用下面各段） =====
+===== Chrome 网上应用店权限理由（按栏粘贴） =====
+远程代码：选「不，我并未使用远程代码」。
+扩展的 JS、WASM 和原生程序都打在 ZIP 里。用户的 Run Script / ACtl 源码存在本机 chrome.storage。抓取网页以便保存、或导入用户自己选的设置 JSON，都不算执行远程托管的扩展代码。
+若表单已是「是」，提交前改成「否」。
 
 ----- nativeMessaging -----
 仅用于连接本机 Windows 原生组件 hrich.autocontrol（%LocalAppData%\AutoControl 下的 AutoControlZero.exe 与引擎）。全局快捷键、鼠标手势、模拟按键和本地文件读写无法在 Service Worker 里完成，必须走该组件。不连接我们的服务器。安装包由用户从扩展内嵌文件安装。

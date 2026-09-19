@@ -4,7 +4,7 @@
 The original AutoControl listing was removed from the Chrome Web Store. This is a community port with a new name and a new store ID so it is not an update of that item.
 
 ⚠️ Not the original product. Not affiliated with the original authors. Settings UI stays in English.
-The listing is only so people can install it easily. If it infringes, it will be taken down.
+The listing is only so people can install it easily. If it infringes the original AutoControl authors’ rights, it will be taken down.
 
 ✨ What still works
 • Keyboard shortcuts and mouse gestures through the original Windows native engine
@@ -33,7 +33,7 @@ Settings stay on your PC. Usage telemetry is off unless you enable it in Advance
 原版 AutoControl 已从网上应用店下架。本扩展用新名称、新商店 ID，不是原条目的更新。
 
 ⚠️ 不是原厂产品，与原作者无关。设置界面仍为英文。
-放到网上应用店只是为了方便大家安装。如果构成侵权，会下架。
+放到网上应用店只是为了方便大家安装。如果对 AutoControl 原开发团队构成侵权，会下架。
 
 ✨ 还能做的事
 • 经原版 Windows 原生引擎处理快捷键与鼠标手势
@@ -62,7 +62,7 @@ Manifest V3 拿掉了常驻后台页，原团队停更。本构建把同一套�
 元の AutoControl は Chrome ウェブストアから削除されました。新しい名前と新しいストア ID を使うコミュニティ移植であり、旧アイテムの更新ではありません。
 
 ⚠️ 公式製品ではありません。元の作者とは無関係です。設定 UI は英語のままです。
-ストア掲載はインストールしやすくするためです。権利侵害になる場合は取り下げます。
+ストア掲載はインストールしやすくするためです。元の AutoControl 開発チームの権利を侵害する場合は取り下げます。
 
 ✨ できること
 • 元の Windows ネイティブエンジンによるショートカットとマウスジェスチャ
