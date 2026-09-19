@@ -19,13 +19,18 @@ The listing is only so people can install it easily. If it infringes the origina
 2. Open the extension → Install the native component → run the installer
 3. If Chrome says the native host is forbidden: run Allow-AutoControl_mv3-native.bat, then reload
 4. Details → turn on “Allow user scripts”
-5. A few sample shortcuts are already there. Full list: https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install — edit them in Extension options. Restore from a .acs file still uses Replace, not Add.
+5. A few sample shortcuts are already there — edit them in Extension options. Full list: https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
+
+🐙 Open source
+Source is on GitHub:
+https://github.com/jotenbai/AutoControl_mv3
+Issues and pull requests welcome (store reviews alone are harder to act on).
 
 📌 Why this port
 Chrome Manifest V3 killed the always-on background page. The original team stopped. This build runs the same obfuscated logic in a service worker plus shims. Some hover-region conditions are broken in Chrome 148+ (native hit-test, MV2 and MV3 alike).
 
 🔒 Privacy
-Settings stay on your PC. Usage telemetry is off unless you enable it in Advanced Options. Policy: webstore/privacy.md on GitHub (jotenbai/AutoControl_mv3).
+Settings stay on your PC. Usage telemetry is off unless you enable it in Advanced Options. Policy: https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
 
 ===== 简体中文 =====
 ⚡ AutoControl_mv3 — 非官方 Manifest V3 移植（快捷键 + 鼠标手势）
@@ -48,13 +53,18 @@ Settings stay on your PC. Usage telemetry is off unless you enable it in Advance
 2. 打开扩展 → Install 原生组件 → 运行安装程序
 3. 若提示 native host forbidden：运行 Allow-AutoControl_mv3-native.bat，然后重载
 4. 详细信息里打开「允许用户脚本」
-5. 安装后已有示例快捷键。完整列表：https://github.com/jotenbai/AutoControl_mv3#预装快捷键首次安装 — 可在扩展程序选项里改。从 .acs 还原仍是替换而不是追加。
+5. 安装后已有示例快捷键，可在扩展程序选项里改。完整列表：https://github.com/jotenbai/AutoControl_mv3#预装快捷键首次安装
+
+🐙 开源
+本扩展已在 GitHub 开源：
+https://github.com/jotenbai/AutoControl_mv3
+欢迎到 Issue 反馈问题，也欢迎提 PR（只写商店评论的话，我们不太方便跟进）。
 
 📌 为什么要移植
 Manifest V3 拿掉了常驻后台页，原团队停更。本构建把同一套混淆逻辑跑在 Service Worker 上。Chrome 148+ 的悬停区域条件失效（原生无障碍命中测试问题，MV2/MV3 一样）。
 
 🔒 隐私
-设置只存在本机。匿名用量默认关闭，可在高级选项里打开。政策见 GitHub 仓库 webstore/privacy.md（jotenbai/AutoControl_mv3）。
+设置只存在本机。匿名用量默认关闭，可在高级选项里打开。政策：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
 
 ===== 日本語 =====
 ⚡ AutoControl_mv3 — 非公式 Manifest V3 移植（キーボードショートカット + マウスジェスチャ）
@@ -77,10 +87,15 @@ Manifest V3 拿掉了常驻后台页，原团队停更。本构建把同一套�
 2. 拡張機能を開く → ネイティブコンポーネントを Install → インストーラを実行
 3. native host forbidden と出たら Allow-AutoControl_mv3-native.bat を実行してから再読み込み
 4. 詳細で「ユーザースクリプトを許可」をオン
-5. 初回インストールですでにサンプルショートカットが入っています。一覧：https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install — 拡張機能のオプションで編集できます。.acs からの復元は追加ではなく置き換えです。
+5. 初回インストールですでにサンプルショートカットが入っています。拡張機能のオプションで編集できます。一覧：https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
+
+🐙 オープンソース
+GitHub で公開しています：
+https://github.com/jotenbai/AutoControl_mv3
+Issue と Pull Request 歓迎です（ストアのレビューだけでは対応しづらいことがあります）。
 
 📌 移植の理由
 Manifest V3 で常駐バックグラウンドページがなくなり、元チームは開発を止めました。同じ難読化ロジックをサービスワーカーで動かしています。Chrome 148 以降のホバー領域条件はネイティブ側のヒットテスト不具合で効きません（MV2 も同じ）。
 
 🔒 プライバシー
-設定はパソコン内に保存。匿名テレメトリは既定オフ。方針は GitHub の webstore/privacy.md（jotenbai/AutoControl_mv3）。
+設定はパソコン内に保存。匿名テレメトリは既定オフ。方針：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
