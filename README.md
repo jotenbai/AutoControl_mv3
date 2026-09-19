@@ -43,6 +43,8 @@ Developers packaging a store ZIP: `.\package.ps1` (strips the original `key`, in
 
 These are **only the defaults**. Change or delete any of them in **Extension options**. They use the **middle mouse button** and **4 directions** (the original AutoControl default was right button / 8).
 
+The native engine **blocks** that button while a gesture can start. Chrome’s middle-click autoscroll and canvas-pan in apps like Figma then stop working. If you use those often, change **Mouse gestures → Perform with**. Right button is the usual alternative; a context menu may flash and then close after the command. We do not recommend side buttons (Back/Forward, and many mice have none) or Ctrl (needs the other hand).
+
 Several of these match Chrome’s own shortcuts; the rest keep the same job but change **where** the new tab appears.
 
 **Mouse gestures** (hold middle button, drag, release):
@@ -138,9 +140,11 @@ Chrome 自己改不了全局快捷键，也加不了鼠标手势。AutoControl �
 
 这些**只是默认设置**，可在 **扩展程序选项** 里随意改或删。手势是**中键**、**4 方向**（原版默认是右键 / 8 方向）。
 
+手势待命时，原生引擎会**拦住**这颗键。Chrome 的中键自动滚动，以及 Figma 一类画布里用中键拖着平移，都会失效。如果经常用这些，到 **Mouse gestures → Perform with** 改触发键。右键是最常见的替代，命令触发后右键菜单可能会闪一下再关掉。不建议用侧键（本身是前进/后退，而且不少鼠标没有）或 Ctrl（还要另一只手按键盘）。
+
 有几条和 Chrome 自带快捷键是同一件事；其余功能相同，但**新标签出现的位置**不同。
 
-**鼠标手势**（按住中键拖、松开）：·
+**鼠标手势**（按住中键拖、松开）：
 
 | 手势 | 相当于                               | 差异                                          |
 | ---- | ------------------------------------ | --------------------------------------------- |
