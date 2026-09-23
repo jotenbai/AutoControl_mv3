@@ -889,15 +889,17 @@ setTimeout(() => {
     noOpOk && proxyOk && escOk, 'noOp=' + noOpOk + ' proxy=' + proxyOk + ' esc=' + escOk);
 }
 
-// B20. sw.js orphan-engine cleanup + reconnect guard (2026-08-06): every
-// connectNative spawns a NEW Zero→engine pair; a dead SW generation leaves
-// its engine orphaned (detached from Zero, holds global hooks) — symptom:
-// TWO AutoCtrl_2025.4.22.0.exe after browser start, one remains after close.
-// __acKillOrphanEngines (at handshake start, before the file check) scans
-// via wmic and taskkills ONLY engines whose AutoControlZero.exe parent is
-// NOT alive — live pairs of other browsers are never touched (multi-browser
-// setups). The reconnect handlers must NOT spawn a duplicate host while a
-// connect/handshake is in flight or the connection is healthy.
+// B20. sw.js orphan-engine cleanup + reconnect guard (2026-08-06; stuck
+// break 2026-09-23): every connectNative spawns a NEW Zero→engine pair; a
+// dead SW generation leaves its engine orphaned (detached from Zero, holds
+// global hooks) — symptom: TWO AutoCtrl_2025.4.22.0.exe after browser start,
+// one remains after close. __acKillOrphanEngines (at handshake start, before
+// the file check) scans via wmic and taskkills ONLY engines whose
+// AutoControlZero.exe parent is NOT alive — live pairs of other browsers
+// are never touched (multi-browser setups). Reconnect must NOT spawn a
+// duplicate while the host is LIVE (connected && handshakeDone), but MUST
+// force cleanup when stuck in __acConnecting with connected=false (type-10
+// hang left store users with forever {already:true} + Native not working).
 {
   const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
   // The wmic query is built PARAMETRICALLY (`"name='" + name + "'"`), so check
@@ -909,11 +911,11 @@ setTimeout(() => {
     sw.includes('taskkill /F /PID ') &&
     sw.includes('__acKillOrphanEngines(gen);');
   const guardOk = (sw.match(/case "reconnect":/g) || []).length === 1 &&
-    /case "reconnect":\s*\/\/ AC-MV3 FIX \(2026-08-06\): never spawn a duplicate host/.test(sw) &&
-    /if \(__acConnecting \|\| \(connected && handshakeDone\)\)/.test(sw) &&
-    /reconnect: \(m, cb\) => \{\s*if \(__acConnecting/.test(sw) &&
+    /if \(!msg\.force && connected && handshakeDone\)/.test(sw) &&
+    /reconnect: \(m, cb\) => \{[\s\S]*?connected && handshakeDone/.test(sw) &&
+    sw.includes('forcing cleanup') &&
     sw.includes('__acConnecting = true;') && sw.includes('__acConnecting = false;');
-  check('sw.js orphan-engine cleanup + healthy reconnect guard (2026-08-06)',
+  check('sw.js orphan-engine cleanup + stuck-handshake reconnect break (2026-09-23)',
     orphanOk && guardOk, 'orphan=' + orphanOk + ' guard=' + guardOk);
 }
 
@@ -1057,7 +1059,7 @@ setTimeout(() => {
     sw.includes('__acMaxNeverConnectedFailures') &&
     /errors >= __acMaxNeverConnectedFailures/.test(sw) &&
     sw.includes('stopping auto-retry') &&
-    /errors = 0; retries = 0;\s*connect\(\)/.test(sw) &&
+    /errors = 0; retries = 0;[\s\S]{0,200}?connect\(\)/.test(sw) &&
     sw.includes('__acCtxMenuOwned') &&
     /id: "reloadExtn", title: "Emergency repair", contexts: \["action\"\]/.test(sw) &&
     !/menuItemId === "reloadExtn"/.test(sw) &&
@@ -2294,7 +2296,7 @@ vm.runInContext(`
   const ok = mf.default_locale === 'en' &&
     mf.name === '__MSG_extName__' &&
     mf.description === '__MSG_extDescription__' &&
-    mf.version === '1.0' &&
+    mf.version === '1.1' &&
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
@@ -2353,6 +2355,22 @@ vm.runInContext(`
     !/payload\.natHostInstalled/.test(sw);
   check('first-install defaults.acs seeded before native connect; no natHostInstalled (2026-09-16)',
     acsOk && swOk, 'acs=' + acsOk + ' sw=' + swOk + ' n=' + (def.trigActList || []).length);
+}
+
+// B60. Store-ID callback offset (2026-09-23): CWS id ifjogpfn… → l=25504;
+// file61 handshake used hardcoded 13625. postWithCb must send 13625 and
+// accept either echo form or type-10 never resolves on the store build.
+{
+  const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  const fnStart = sw.indexOf('function postWithCb(');
+  const fn = fnStart >= 0 ? sw.slice(fnStart, fnStart + 2200) : '';
+  const ok = /lOfficial\s*=\s*13625/.test(fn) &&
+    /const l = lOfficial/.test(fn) &&
+    fn.includes('new Set([') &&
+    fn.includes('lDyn') &&
+    !/const l = parseInt\(extId\.substr\(2, 3\), 36\)/.test(fn);
+  check('postWithCb sends official l=13625; accepts dyn echo (store-ID handshake, 2026-09-23)',
+    ok, 'postWithCb=' + ok);
 }
 
 // ---------- summary ----------

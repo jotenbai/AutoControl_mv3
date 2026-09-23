@@ -2277,6 +2277,7 @@
   function onConnError(reason, gen) {
     if (gen !== undefined && gen !== __acConnGen) return; // stale port — ignore
     connected = false;
+    __acConnecting = false;
     // CRITICAL (2026-08-04): reset the handshake state so a RECONNECT re-runs
     // the FULL handshake (file check → init 20 → 67 → config → 21). Without
     // this the guard in proceedAfterFileCheck skipped the re-init and the
@@ -2620,6 +2621,15 @@
    * Native echoes back just 'e' (subtracts l internally)
    *
    * So we store keyed by 'e', send 'e + l', match response against 'e'.
+   *
+   * AC-MV3 FIX (2026-09-23): file61.js HARDCODES l=13625 for the first
+   * handshake (the original AutoControl ID hash), then switches to
+   * parseInt(id.substr(2,3),36). The CWS ID ifjogpfn… hashes to 25504 —
+   * sending e+25504 never matched the native's echo (type-10 timeout,
+   * connected:false) while the same machine's unpacked lkaihd… build
+   * connected fine. Always SEND with the official 13625 offset (MV2
+   * parity); ACCEPT echoes computed with either offset so a native that
+   * strips the live extension id still resolves.
    */
   function postWithCb(type, payload = {}, timeout = 5000) {
     // Type 250 = file write (chunked, e.g. the 695 KB engine in 4 chunks).
@@ -2634,13 +2644,22 @@
       if (!port) { reject(Error("no port")); return; }
       const e = 2130706431 * Math.random() | 0;
       const extId = chrome.runtime.id;
-      const l = parseInt(extId.substr(2, 3), 36) || 13625; // "lkaihdpfpifdlgoapbfocpmekbokmcfd" -> 13625
+      const lOfficial = 13625; // lkaihdpfpifdlgoapbfocpmekbokmcfd → substr(2,3)="aih"
+      const lDyn = parseInt(extId.substr(2, 3), 36) || lOfficial;
+      const l = lOfficial;
       const sentCallback = e + l;
+      // Accept: stripped-with-send-l (e), raw echo, or stripped-with-dyn-l
+      // after a send that used official l (id = e + lOfficial - lDyn).
+      const accept = new Set([
+        e, sentCallback, e + lDyn,
+        e + (lOfficial - lDyn), e + (lDyn - lOfficial)
+      ]);
       const timer = timeout ? setTimeout(() => {
         // A send on a SUPERSEDED port must not act on the current connection:
         // no onConnError, no state change — just fail the promise quietly.
         if (gen !== __acConnGen) { reject(Error("stale")); return; }
-        console.warn("[AC-MV3] postWithCb timeout for type", type, "e:", e);
+        console.warn("[AC-MV3] postWithCb timeout for type", type, "e:", e,
+          "lSend:", l, "lDyn:", lDyn, "id:", extId);
         reject(Error("timeout"));
       }, timeout) : null;
 
@@ -2648,12 +2667,13 @@
         let mt, md;
         if (Array.isArray(m)) { mt = m[0]; md = m[1]; }
         else { mt = m.msgType; md = m; }
-        // Native echoes back just 'e' (without +l offset)
-        if (mt === 710 && (md.id === e || md.id == e || md.id == sentCallback)) {
+        const id = md && md.id;
+        if (mt === 710 && (accept.has(id) || accept.has(+id))) {
           if (gen !== __acConnGen) return; // stale — the promise is already dead
           port.onMessage.removeListener(handler);
           if (timer) clearTimeout(timer);
-          console.log("[AC-MV3] postWithCb resolved type", type, "result:", md.params);
+          console.log("[AC-MV3] postWithCb resolved type", type, "result:", md.params,
+            "echoId:", id, "e:", e, "lSend:", l, "lDyn:", lDyn);
           resolve(md.params !== undefined ? md.params : md);
         }
       };
@@ -3456,10 +3476,14 @@
         return true;
       case "reconnect":
         // AC-MV3 FIX (2026-08-06): never spawn a duplicate host while a
-        // connection exists or a handshake is in flight — every connectNative
-        // starts a NEW Zero→engine pair and the old engine would linger as an
-        // orphan (file2.js z() sends reconnect twice after install/repair).
-        if (__acConnecting || (connected && handshakeDone)) {
+        // healthy connection is up — every connectNative starts a NEW
+        // Zero→engine pair and the old engine would linger as an orphan
+        // (file2.js z() sends reconnect twice after install/repair).
+        // AC-MV3 FIX (2026-09-23): __acConnecting && !connected used to
+        // return {already:true} forever (stuck type-10 handshake / orphan
+        // engine). Page reconnect must break that state; only skip when
+        // the host is actually live. msg.force always tears down + retries.
+        if (!msg.force && connected && handshakeDone) {
           sendRes({ ok: true, already: true });
           return true;
         }
@@ -3467,7 +3491,12 @@
         // install must reset the never-connected failure counter (the
         // auto-retry loop may have stopped — see onDisc).
         errors = 0; retries = 0;
-        connect(); sendRes({}); return true;
+        if (__acConnecting || connected || port) {
+          console.warn("[AC-MV3] reconnect: forcing cleanup (connecting=" +
+            __acConnecting + " connected=" + connected + " force=" + !!msg.force + ")");
+          cleanup();
+        }
+        connect(); sendRes({ ok: true, forced: true }); return true;
       case "getStatus":
         sendRes({ connected, connectTime }); return true;
       case "getOptPerms":
@@ -3758,11 +3787,16 @@
       cb && cb({ ok: true });
     },
     reconnect: (m, cb) => {
-      if (__acConnecting || (connected && handshakeDone)) { cb && cb({ ok: true, already: true }); return; }
+      // Same stuck-handshake break as the onMessage "reconnect" case
+      // (2026-09-23): only skip when the host is actually live.
+      if (!(m && m.force) && connected && handshakeDone) {
+        cb && cb({ ok: true, already: true }); return;
+      }
       // AC-MV3 FIX (2026-08-07): reset the never-connected failure counter so
       // a post-install reconnect works even after the auto-retry loop stopped.
       errors = 0; retries = 0;
-      connect(); cb && cb({ ok: true });
+      if (__acConnecting || connected || port) cleanup();
+      connect(); cb && cb({ ok: true, forced: true });
     },
     getStatus: (m, cb) => cb({ connected, connectTime })
   };

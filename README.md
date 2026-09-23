@@ -4,7 +4,7 @@
 
 Unofficial Manifest V3 port of the old **AutoControl** extension (original store ID [`lkaihdpfpifdlgoapbfocpmekbokmcfd`](https://chromewebstore.google.com/detail/autocontrol-keyboard-shor/lkaihdpfpifdlgoapbfocpmekbokmcfd/)). This fork is named **AutoControl_mv3** so it is not an update of that listing. Docs mirror: [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/). If that site is gone, use [`reference/Docs/autocontrol.app-site/`](reference/Docs/autocontrol.app-site/). Do not use the old website — the domain was re-registered.
 
-Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). Chrome Web Store draft ID: [`ifjogpfnljedincfpelmhaljnllegckm`](https://chromewebstore.google.com/detail/ifjogpfnljedincfpelmhaljnllegckm) (link works after the listing is public). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
+Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). Chrome Web Store: [AutoControl_mv3](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
 
 ---
 
@@ -22,9 +22,9 @@ The Chrome Web Store listing is only so people can install it easily. If it infr
 
 ### Install (Chrome Web Store — preferred)
 
-1. Install **AutoControl_mv3** from the Chrome Web Store _(public link after review: `https://chromewebstore.google.com/detail/ifjogpfnljedincfpelmhaljnllegckm`)_.
+1. Install **AutoControl_mv3** from the [Chrome Web Store](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm).
 2. Open the extension → **Install** the native component → run the installer.
-3. If hotkeys do nothing and Chrome says the native host is **forbidden**, save and run `Allow-AutoControl_mv3-native.bat` (the extension offers it), then **reload** the extension.
+3. The store build has a **new extension ID**. After Install, if options still show the Install page or hotkeys do nothing: save and run `Allow-AutoControl_mv3-native.bat` (the extension offers a download / notification when Chrome reports the host is **forbidden**), then **reload** the extension on `chrome://extensions`.
 4. `chrome://extensions` → AutoControl_mv3 → **Details**:
    - **Allow user scripts** — required for Run Script / ACtl.
    - **Allow access to file URLs** — only for local `file://` paths.
@@ -125,9 +125,9 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 
 ### 安装（Chrome 网上应用店 — 推荐）
 
-1. 从网上应用店安装 **AutoControl_mv3**（公开后：`https://chromewebstore.google.com/detail/ifjogpfnljedincfpelmhaljnllegckm`）。
+1. 从 [Chrome 网上应用店](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm) 安装 **AutoControl_mv3**。
 2. 打开扩展 → **Install** 原生组件 → 运行安装程序。
-3. 若快捷键没反应，且提示 native host **forbidden**，保存并运行 `Allow-AutoControl_mv3-native.bat`，然后**重载**扩展。
+3. 商店版是**新的扩展 ID**。Install 之后若选项页还停在 Install，或快捷键没反应：保存并运行 `Allow-AutoControl_mv3-native.bat`（Chrome 报 native host **forbidden** 时扩展会提示下载），然后在 `chrome://extensions` **重载**扩展。
 4. `chrome://extensions` → AutoControl_mv3 → **详细信息**：
    - **允许用户脚本** — Run Script / ACtl 必需。
    - **允许访问文件网址** — 只用到本地 `file://` 时才开。

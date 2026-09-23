@@ -366,6 +366,36 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   auto-retry stops after 8 CONSECUTIVE failures (`errors` resets on every
   successful handshake); a temporarily-down host still reconnects when it
   returns. mh_test B25.
+- **Stuck `__acConnecting` blocked page reconnect (FIXED 2026-09-23)** —
+  store install showed `natHostInstalled:true` + `connected:false` + type-10
+  timeout; `{cmd:"reconnect"}` returned `{already:true}` because the guard
+  treated in-flight handshake as "already connected". Orphan engines (Zero
+  parent dead) left the pipe half-dead so type 10 never answered. FIX:
+  reconnect only skips when `connected && handshakeDone`; otherwise
+  `cleanup()` + `connect()` (and `msg.force` always forces). `onConnError`
+  clears `__acConnecting`. mh_test B20. Store ZIP needs a version bump to
+  pick this up; unpacked `extension/` has it now.
+- **Store ID `ifjogpfn…` vs unpacked `lkaihd…` (2026-09-23)** — unpacked
+  (manifest `key` → original ID) connects; CWS ID stays `connected:false`
+  with type-10 timeout / `[AC-TEL] invalidExtId`. Two layers:
+  1. **Callback `l` offset (FIXED in sw.js)**: file61 hardcodes `l=13625`
+     for handshake; CWS ID hashes to 25504. `postWithCb` now always SENDS
+     with 13625 and ACCEPTS echoes for either offset. Store ZIP must be
+     republished to pick this up; local `extension/` has it. To test the
+     store ID without waiting for CWS: put the store public `key` into
+     `extension/manifest.json` (backup at `manifest.key.original.txt`),
+     **fully remove** the CWS install (not just disable), **quit Chrome
+     completely**, then Load unpacked. Same-ID side-by-side made Chrome
+     unusable on this machine (windows kept minimizing — likely native
+     LL-hook fight + Chrome's duplicate-ID path; renaming the folder and
+     restarting healed it). Prefer a separate Chrome profile for that
+     test. Daily Load unpacked keeps the **original** `key` → `lkaihd…`.
+  2. **Zero embedded origins**: `AutoControlZero.exe` embeds the installer
+     default 14-origin list (store ID absent). Binary-swapping one unused
+     32-char slot in `%LocalAppData%\AutoControl\AutoControlZero.exe` may
+     still be needed on some machines; do **not** patch `reference/`.
+     Reinstall/Repair rewrites Zero. Disable unpacked while testing CWS
+     (two clients → orphans).
 - **Install pane must NOT auto-close (FIXED 2026-08-07)** — the ping-loop
   starts ONLY after the user clicks Install; for the leftover-native case the
   shim dispatches `ac-install-done` when the SW reports connected AND
