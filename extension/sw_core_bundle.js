@@ -997,7 +997,7 @@ if(_Yk.sessions){let a=_Yk.sessions.onChanged;a.addListener(_ay);a.removeListene
 _Yk.contextMenus.onClicked.addListener(_cg(function*(a){if("reloadExtn"==a.menuItemId){a=yield _Vy(_ya);let b=yield _Vt(),c={allWinIds:b.map(d=>d.id),idToHndl:_na,hndlToId:_Or,actionQueue:_2y};a&&!a.actWinMine&&(c.focusedId=(b.filter(d=>d.focused)[0]||{}).id,c.lastFocusId=((yield d=>_Yk.windows.getLastFocused({windowTypes:_Ge},d))||{}).id,c.focusedId==c.lastFocusId&&(delete c.lastFocusId,_na[c.focusedId]==a.focusWin&&delete c.focusedId),c.hijackedWins=Object.keys(_Ld));_9k("diagnostics",c.add(a));
 _co(1,!0)}else a.menuItemId.startsWith("binSwtch")&&_2t(a.menuItemId,a.checked)}));
 // Extension installed/updated
-_Yk.runtime.onInstalled.addListener(_cg(function*(a){if("update"==a.reason&&"2025.4.22"!=a.previousVersion){yield _Eu.wait();let b=yield _ad();b.errorCount=yield _dk();_Ot("update",b.add({prevVersion:a.previousVersion}));_F(a.previousVersion,"2021.4.5")}}));
+_Yk.runtime.onInstalled.addListener(_cg(function*(a){if("update"==a.reason&&"2025.4.22"!=a.previousVersion){yield _Eu.wait();let b=yield _ad();b.errorCount=yield _dk();_Ot("update",b.add({prevVersion:a.previousVersion}));/^\d{4}\./.test(a.previousVersion)&&_F(a.previousVersion,"2021.4.5")}}));
 // External messages
 _Yk.runtime.onMessageExternal.addListener((a,b,c)=>{b=_gj.indexOf(b.id);if(0<=b)switch(a){case "TBBtnInit":_ve(b);break;case "TBBtnClick":_Wo(_At+b),c(!0)}});
 // Initialize switches

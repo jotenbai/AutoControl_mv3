@@ -397,6 +397,21 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
   the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
   README steers end users to Load unpacked from GitHub.
+- **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
+  after reloading unpacked 1.1 → 1.2, Chrome could not start the host and
+  Windows showed "This app can't run on your PC"; the installed Zero was
+  532800 bytes instead of 332800. ROOT CAUSE: MV2 `onInstalled` (file62_mv3)
+  calls `_F(previousVersion, "2021.4.5")` (file93, NH0-update): if
+  `_ba(prev, "2021.4.5")` it rewrites the RUNNING Zero from `file69.dat`
+  via `_4u` (native chunked file write, 200000-byte chunks, up to 4
+  retries 5s apart). `_ba` does `new Date(v.replace(".","-"))` — `"1-1"` parses as
+  2001 → every 1.x → 1.y update triggered it. FIX: call `_F` only when
+  `previousVersion` matches `/^\d{4}\./` (year-style MV2 versions). mh_test
+  B61. Bundle rebuilt. Repair: copy
+  `reference/AutoControl_native/AutoControlZero.exe` (MD5 `FF33A86E…`) into
+  `%LocalAppData%\AutoControl\`, or rerun Native-Component. ⚠
+  `file69.dat` is the ENCRYPTED distro form (differs from byte 0) — never
+  copy it as the exe; only the native write path decrypts it.
 - **Install pane must NOT auto-close (FIXED 2026-08-07)** — the ping-loop
   starts ONLY after the user clicks Install; for the leftover-native case the
   shim dispatches `ac-install-done` when the SW reports connected AND

@@ -2379,6 +2379,24 @@ vm.runInContext(`
     ok, 'postWithCb=' + ok);
 }
 
+// B61. Zero self-update on extension update (2026-09-27): MV2 onInstalled
+// ran _F(prev,"2021.4.5") which rewrites AutoControlZero.exe from
+// file69.dat. new Date("1-1") parses as 2001 → every 1.x → 1.y reload
+// rewrote (and corrupted) the running Zero → Windows "This app can't run
+// on your PC". _F must only run for year-style previous versions.
+{
+  const src = fs.readFileSync(path.join(MV3, 'file62_mv3.js'), 'utf8');
+  const bundle = fs.readFileSync(path.join(MV3, 'sw_core_bundle.js'), 'utf8');
+  const guard = '/^\\d{4}\\./.test(a.previousVersion)&&_F(a.previousVersion,"2021.4.5")';
+  const srcOk = src.includes(guard);
+  const bundleOk = bundle.includes(guard);
+  const noBare = !/\)\);_F\(a\.previousVersion/.test(src) && !/\)\);_F\(a\.previousVersion/.test(bundle);
+  const re = /^\d{4}\./;
+  const rt = !re.test('1.1') && !re.test('1.2') && re.test('2021.4.5');
+  check('onInstalled: Zero self-update _F gated to year-style prev versions (1.x reload no longer rewrites Zero)',
+    srcOk && bundleOk && noBare && rt, 'src=' + srcOk + ' bundle=' + bundleOk + ' noBare=' + noBare + ' rt=' + rt);
+}
+
 // ---------- summary ----------
 setTimeout(() => {
   console.log('---');

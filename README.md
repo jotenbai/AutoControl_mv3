@@ -18,15 +18,17 @@ The bigger difference versus other shortcut extensions: your shortcuts and gestu
 
 Run Script is different: Chrome still forbids running scripts **inside** `chrome://` and the Web Store (same as Tampermonkey). A background script can still call ACtl while you are on those pages, but it cannot read or change the page itself. The options UI already has samples such as **Example 1: Download all images** — try them on a normal `https` page with **Allow user scripts** on.
 
+The Chrome Web Store listing is only so people can install it easily. If it infringes the original AutoControl authors’ rights, it will be taken down.
+
 ### Install (Load unpacked — recommended)
 
-The Chrome Web Store listing is **still in a testing phase**. Please install from this repository for now. Keep the `extension/` folder (do not delete it after loading).
+The store listing is **still in a testing phase**. Install from this repository for now, and keep the `extension/` folder (Chrome keeps reading it).
 
 **Download**
 
 1. GitHub → **Code** → **Download ZIP**
 2. Unzip the archive
-3. Copy the `extension/` folder somewhere convenient and keep it (Chrome loads that directory)
+3. Copy the `extension/` folder somewhere and keep it
 
 **Install**
 
@@ -125,15 +127,17 @@ Chrome 自己改不了全局快捷键，也加不了鼠标手势。AutoControl �
 
 Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店里跑脚本（和 Tampermonkey 一样）。后台脚本在这些页面上仍能调用 ACtl，但不能读、改页面本身。扩展程序选项里已有示例，例如 **Example 1: Download all images**——打开 **允许用户脚本**，在普通 `https` 页上试。
 
-放到网上应用店只是为了方便安装；**当前商店上架仍在测试阶段**，请先用下面的文件夹方式安装。如果对 AutoControl 原开发团队构成侵权，会下架。
+放到网上应用店只是为了方便安装。如果对 AutoControl 原开发团队构成侵权，会下架。
 
 ### 安装（加载已解压 — 推荐）
+
+商店上架**仍在测试阶段**，请先从本仓库安装，并保留 `extension/` 文件夹（Chrome 一直要读这个目录）。
 
 **下载**
 
 1. GitHub → **Code** → **Download ZIP**
 2. 解压
-3. 把里面的 `extension/` 文件夹复制到别处备用（**不要删**；Chrome 一直要读这个目录）
+3. 把里面的 `extension/` 文件夹复制到别处备用
 
 **安装**
 

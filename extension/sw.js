@@ -862,7 +862,11 @@
       // at startup (file47.js `_nk()` only runs on the settings page, so
       // after an extension reload the menu is gone until the page opens).
       // Once the SW owns it, skip duplicates from the page.
-      if (props && props.id === 'reloadExtn' && self.__acCtxMenuOwned) return 0;
+      if (props && props.id === 'reloadExtn') {
+        if (self.__acCtxMenuOwned) return 0;
+        const userCb = cb;
+        cb = () => { void chrome.runtime.lastError; userCb && userCb(); };
+      }
       return origCtxCreate(props, cb);
     };
     // AC-MV3 FIX (2026-08-08): file47.js `_nk()` calls contextMenus.removeAll()
@@ -880,7 +884,7 @@
             // after every config-chain removeAll (user 2026-08-12).
             origCtxCreate(
               { id: "reloadExtn", title: "Emergency repair", contexts: ["action"] },
-              () => {}
+              () => { void chrome.runtime.lastError; }
             );
           } catch(e) { console.warn("[AC-MV3] Emergency-repair menu recreate failed:", e.message); }
         }
@@ -3707,7 +3711,7 @@
       try {
         chrome.contextMenus.create(
           { id: "reloadExtn", title: "Emergency repair", contexts: ["action"] },
-          () => { self.__acCtxMenuOwned = true; }
+          () => { void chrome.runtime.lastError; self.__acCtxMenuOwned = true; }
         );
       } catch(e) { console.warn("[AC-MV3] Emergency-repair menu create failed:", e.message); }
     });
