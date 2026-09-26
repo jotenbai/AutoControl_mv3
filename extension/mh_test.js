@@ -2292,11 +2292,13 @@ vm.runInContext(`
   const locJa = path.join(MV3, '_locales', 'ja', 'messages.json');
   const pack = fs.readFileSync(path.join(MV3, '..', 'package.ps1'), 'utf8');
   const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  const f2 = fs.readFileSync(path.join(MV3, 'file2.js'), 'utf8');
+  const mainHtml = fs.readFileSync(path.join(MV3, 'main.html'), 'utf8');
   const msgs = JSON.parse(fs.readFileSync(locEn, 'utf8'));
   const ok = mf.default_locale === 'en' &&
     mf.name === '__MSG_extName__' &&
     mf.description === '__MSG_extDescription__' &&
-    mf.version === '1.1' &&
+    mf.version === '1.2' &&
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
@@ -2305,7 +2307,11 @@ vm.runInContext(`
     sw.includes('function __acEnsureNativeOrigin') &&
     sw.includes('function __acOfferNativeOriginPatcher') &&
     sw.includes('/forbidden/i') &&
-    sw.includes('Allow-AutoControl_mv3-native.bat');
+    sw.includes('Allow-AutoControl_mv3-native.bat') &&
+    sw.includes('case "patchNativeOrigin"') &&
+    sw.includes('__acNeedsNativeOriginPatch') &&
+    f2.includes('patchNativeOrigin') &&
+    mainHtml.includes('allowOrigin');
   check('store branding: AutoControl_mv3 locales + pack zip strips original key (2026-09-16)',
     ok, 'ver=' + mf.version + ' locale=' + mf.default_locale + ' hasKey=' + !!mf.key);
 }

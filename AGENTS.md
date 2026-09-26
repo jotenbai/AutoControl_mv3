@@ -375,27 +375,28 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   `cleanup()` + `connect()` (and `msg.force` always forces). `onConnError`
   clears `__acConnecting`. mh_test B20. Store ZIP needs a version bump to
   pick this up; unpacked `extension/` has it now.
-- **Store ID `ifjogpfn…` vs unpacked `lkaihd…` (2026-09-23)** — unpacked
-  (manifest `key` → original ID) connects; CWS ID stays `connected:false`
-  with type-10 timeout / `[AC-TEL] invalidExtId`. Two layers:
+- **Store ID `ifjogpfn…` vs unpacked `lkaihd…` (2026-09-23; Allow-bat UX 2026-09-26)** —
+  unpacked (manifest `key` → original ID) connects; CWS ID stays
+  `connected:false` with type-10 timeout / `[AC-TEL] invalidExtId` until
+  fixed. Layers:
   1. **Callback `l` offset (FIXED in sw.js)**: file61 hardcodes `l=13625`
-     for handshake; CWS ID hashes to 25504. `postWithCb` now always SENDS
-     with 13625 and ACCEPTS echoes for either offset. Store ZIP must be
-     republished to pick this up; local `extension/` has it. To test the
-     store ID without waiting for CWS: put the store public `key` into
-     `extension/manifest.json` (backup at `manifest.key.original.txt`),
-     **fully remove** the CWS install (not just disable), **quit Chrome
-     completely**, then Load unpacked. Same-ID side-by-side made Chrome
-     unusable on this machine (windows kept minimizing — likely native
-     LL-hook fight + Chrome's duplicate-ID path; renaming the folder and
-     restarting healed it). Prefer a separate Chrome profile for that
-     test. Daily Load unpacked keeps the **original** `key` → `lkaihd…`.
-  2. **Zero embedded origins**: `AutoControlZero.exe` embeds the installer
-     default 14-origin list (store ID absent). Binary-swapping one unused
-     32-char slot in `%LocalAppData%\AutoControl\AutoControlZero.exe` may
-     still be needed on some machines; do **not** patch `reference/`.
-     Reinstall/Repair rewrites Zero. Disable unpacked while testing CWS
-     (two clients → orphans).
+     for handshake; CWS ID hashes to 25504. `postWithCb` always SENDS with
+     13625 and ACCEPTS either echo. mh_test B60.
+  2. **Installer wipes whitelist (FIXED UX 2026-09-26)**: Native-Component
+     Reinstall rewrites `AutoControl.manifest` without the store origin →
+     `connectNative` forbidden again. `__acEnsureNativeOrigin` only runs
+     AFTER handshake (chicken-and-egg). FIX: Install click and the
+     “Native not working” dialog offer `patchNativeOrigin` (user-gesture
+     download of `Allow-*.bat` into Downloads); new **Allow this extension
+     ID** button. Handshake also sends
+     type 40 false twice (stuck-capture / wild-minimize hedge). Download
+     only runs on a real user gesture (forbidden-from-SW no longer calls
+     `chrome.downloads` — that caused “must be called during a user
+     gesture” Errors on non-original IDs).
+  Do **not** load store-ID and unpacked builds in the same Chrome profile
+  (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
+  the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
+  README steers end users to Load unpacked from GitHub.
 - **Install pane must NOT auto-close (FIXED 2026-08-07)** — the ping-loop
   starts ONLY after the user clicks Install; for the leftover-native case the
   shim dispatches `ac-install-done` when the SW reports connected AND

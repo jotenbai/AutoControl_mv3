@@ -1402,6 +1402,9 @@
    * original AutoControl ID is already listed. For a Chrome Web Store ID
    * that was never in the installer whitelist, connectNative fails with
    * "forbidden" BEFORE this can run — see __acOfferNativeOriginPatcher.
+   * Reinstall/Repair rewrites the manifest from the installer defaults and
+   * DROPS the store origin — user must re-run Allow-*.bat (or click Install
+   * again, which re-offers the bat on a user gesture).
    */
   function __acEnsureNativeOrigin() {
     try {
@@ -1427,62 +1430,91 @@
   }
 
   /**
-   * connectNative rejected this ID (CWS / unpacked without the original
-   * key). Chrome cannot write %LocalAppData%\\AutoControl itself — download
-   * a tiny .bat the user runs once (same class of click as Native-Component).
+   * Offer Allow-AutoControl_mv3-native.bat for non-original extension IDs.
+   * @param {string} [reason]
+   * @param {{force?: boolean, saveAs?: boolean, download?: boolean}} [opts]
+   *   download — true ONLY from a page user-gesture (Install / Allow button).
+   *     chrome.downloads.download WITHOUT a gesture throws
+   *     "This function must be called during a user gesture" (CWS /
+   *     connectNative-forbidden path used to hit that from the SW).
+   *   Without download: log + notification only (safe from onDisconnect).
    */
-  function __acOfferNativeOriginPatcher(reason) {
+  function __acOfferNativeOriginPatcher(reason, opts) {
     try {
-      if (self.__acOriginPatcherOffered) return;
+      opts = opts || {};
+      const force = !!opts.force;
+      const doDownload = !!opts.download;
+      if (!force && self.__acOriginPatcherOffered) return;
       self.__acOriginPatcherOffered = true;
       const origin = 'chrome-extension://' + chrome.runtime.id + '/';
-      console.warn('[AC-MV3] Native host forbade this ID. Run the Allow-*.bat then reload.', reason || '', origin);
-      const bat = [
-        '@echo off',
-        'setlocal',
-        'set "MAN=%LOCALAPPDATA%\\AutoControl\\AutoControl.manifest"',
-        'if not exist "%MAN%" (',
-        '  echo Native host not installed yet. Run Native-Component.exe first.',
-        '  pause',
-        '  exit /b 1',
-        ')',
-        'powershell -NoProfile -ExecutionPolicy Bypass -Command ^',
-        '  "$p=$env:LOCALAPPDATA+\'\\AutoControl\\AutoControl.manifest\';" ^',
-        '  "$j=Get-Content -Raw -Encoding UTF8 $p | ConvertFrom-Json;" ^',
-        '  "$o=\'' + origin + '\';" ^',
-        '  "$list=@($j.allowed_origins);" ^',
-        '  "if ($list -contains $o) { Write-Host Already allowed $o; exit 0 }" ^',
-        '  "$j.allowed_origins=$list+$o;" ^',
-        '  "($j | ConvertTo-Json -Compress) | Set-Content -Encoding UTF8 $p;" ^',
-        '  "Write-Host Added $o"',
-        'echo Reload AutoControl_mv3 on chrome://extensions.',
-        'pause',
-        ''
-      ].join('\r\n');
-      const url = 'data:application/octet-stream;base64,' + btoa(unescape(encodeURIComponent(bat)));
-      const dl = () => {
-        if (!chrome.downloads || !chrome.downloads.download) return;
-        chrome.downloads.download({
-          url,
-          filename: 'Allow-AutoControl_mv3-native.bat',
-          saveAs: true
-        }, () => void chrome.runtime.lastError);
-      };
-      if (chrome.downloads && chrome.downloads.download) dl();
-      else if (chrome.permissions && chrome.permissions.request) {
-        chrome.permissions.request({ permissions: ['downloads'] }, ok => { if (ok) dl(); });
+      const isAltId = chrome.runtime.id !== 'lkaihdpfpifdlgoapbfocpmekbokmcfd';
+      console.warn('[AC-MV3] Native origin patcher', reason || '', origin,
+        'force=' + force + ' download=' + doDownload + ' altId=' + isAltId);
+
+      if (doDownload) {
+        const bat = [
+          '@echo off',
+          'setlocal',
+          'echo AutoControl_mv3 — allow this extension for the native host',
+          'echo Origin: ' + origin,
+          'set "MAN=%LOCALAPPDATA%\\AutoControl\\AutoControl.manifest"',
+          'if not exist "%MAN%" (',
+          '  echo Native host not installed yet. Run Native-Component.exe first,',
+          '  echo then run this bat again.',
+          '  pause',
+          '  exit /b 1',
+          ')',
+          'powershell -NoProfile -ExecutionPolicy Bypass -Command ^',
+          '  "$p=$env:LOCALAPPDATA+\'\\AutoControl\\AutoControl.manifest\';" ^',
+          '  "$j=Get-Content -Raw -Encoding UTF8 $p | ConvertFrom-Json;" ^',
+          '  "$o=\'' + origin + '\';" ^',
+          '  "$list=@($j.allowed_origins);" ^',
+          '  "if ($list -contains $o) { Write-Host Already allowed $o; exit 0 }" ^',
+          '  "$j.allowed_origins=$list+$o;" ^',
+          '  "$out=($j | ConvertTo-Json -Compress);" ^',
+          '  "[IO.File]::WriteAllText($p,$out,(New-Object Text.UTF8Encoding $false));" ^',
+          '  "Write-Host Added $o"',
+          'echo.',
+          'echo Done. Reload AutoControl_mv3 on chrome://extensions.',
+          'pause',
+          ''
+        ].join('\r\n');
+        const url = 'data:application/octet-stream;base64,' + btoa(unescape(encodeURIComponent(bat)));
+        const saveAs = opts.saveAs === true;
+        if (chrome.downloads && chrome.downloads.download) {
+          chrome.downloads.download({
+            url,
+            filename: 'Allow-AutoControl_mv3-native.bat',
+            saveAs,
+            conflictAction: 'uniquify'
+          }, id => {
+            const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
+            if (err) console.warn('[AC-MV3] Allow-bat download failed:', err);
+            else console.log('[AC-MV3] Allow-bat download id=', id, 'saveAs=', saveAs);
+          });
+        }
       }
+
       try {
-        chrome.notifications.create('ac-native-origin', {
+        chrome.notifications.create('ac-native-origin-' + Date.now(), {
           type: 'basic',
           iconUrl: chrome.runtime.getURL('AutoCtrl/logo32.png'),
-          title: 'AutoControl_mv3',
-          message: 'This extension ID is not in the native-host whitelist. Save and run Allow-AutoControl_mv3-native.bat, then reload.'
-        }, () => void chrome.runtime.lastError);
+          title: 'AutoControl_mv3 — allow native host',
+          message: doDownload
+            ? (isAltId
+              ? 'Run Allow-AutoControl_mv3-native.bat from Downloads (AFTER Native-Component), then reload.'
+              : 'Save and run Allow-AutoControl_mv3-native.bat, then reload.')
+            : 'This extension ID is not in the native whitelist. Open options → Install or click “Allow this extension ID”, run the bat, then reload.'
+        }, () => { void chrome.runtime.lastError; });
       } catch (e2) {}
     } catch (e) {
       console.warn('[AC-MV3] Origin patcher offer failed:', e && e.message);
     }
+  }
+
+  /** True when this build is not the original AutoControl store ID. */
+  function __acNeedsNativeOriginPatch() {
+    return chrome.runtime.id !== 'lkaihdpfpifdlgoapbfocpmekbokmcfd';
   }
 
   /**
@@ -1508,14 +1540,14 @@
         // and when the host is not installed.
         const discErr = (chrome.runtime.lastError && chrome.runtime.lastError.message) || '';
         void chrome.runtime.lastError;
-        if (/forbidden/i.test(discErr)) __acOfferNativeOriginPatcher(discErr);
+        if (/forbidden/i.test(discErr)) __acOfferNativeOriginPatcher(discErr, { download: false });
         onDisc(gen);
       });
       portConnectedOk = false;
       if (chrome.runtime.lastError) {
         const cErr = chrome.runtime.lastError.message;
         console.warn("[AC-MV3] Connect error:", cErr);
-        if (/forbidden/i.test(cErr || '')) __acOfferNativeOriginPatcher(cErr);
+        if (/forbidden/i.test(cErr || '')) __acOfferNativeOriginPatcher(cErr, { download: false });
         scheduleRetry();
       } else {
         console.log("[AC-MV3] Port created, starting handshake...");
@@ -2016,6 +2048,14 @@
 
     console.log("[AC-MV3] Native connected successfully!");
     __acEnsureNativeOrigin();
+    // AC-MV3 FIX (2026-09-26): leave capture OFF after handshake. A stuck
+    // type-40 capture (or a half-dead host after Reinstall) can make the OS
+    // look like "all windows minimize" while hooks fight. Safe no-op when
+    // already off — same dual-send pattern as the capture watchdog.
+    try {
+      postMsg(40, false);
+      setTimeout(() => { try { postMsg(40, false); } catch (e) {} }, 60);
+    } catch (e) {}
     // Broadcast nativeConfigReady above (inside the storage.get callback) is the
     // primary signal telling the page to run window enum + config chain.
   }
@@ -3364,6 +3404,22 @@
           console.log(`[AC-MV3-SW] Replaying ${nativeMsgBuffer.length} buffered messages to new page`);
         }
         sendRes(pingResponse); return true;
+      case "patchNativeOrigin":
+        // Page Install / "Allow native ID" button (user gesture) — download
+        // Allow-*.bat. Must NOT download from connectNative-forbidden alone
+        // (no gesture → chrome.downloads throws / lastError spam).
+        self.__acOriginPatcherOffered = false;
+        __acOfferNativeOriginPatcher(msg.reason || 'page-request', {
+          force: true,
+          download: true,
+          saveAs: !!msg.saveAs
+        });
+        sendRes({
+          ok: true,
+          needsPatch: __acNeedsNativeOriginPatch(),
+          extensionId: chrome.runtime.id
+        });
+        return true;
       case "sandboxMessage":
         // Offscreen document relays a result/userAPI message from the
         // file23.html sandbox iframe → dispatch to file48's "message" handler

@@ -4,7 +4,7 @@
 
 Unofficial Manifest V3 port of the old **AutoControl** extension (original store ID [`lkaihdpfpifdlgoapbfocpmekbokmcfd`](https://chromewebstore.google.com/detail/autocontrol-keyboard-shor/lkaihdpfpifdlgoapbfocpmekbokmcfd/)). This fork is named **AutoControl_mv3** so it is not an update of that listing. Docs mirror: [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/). If that site is gone, use [`reference/Docs/autocontrol.app-site/`](reference/Docs/autocontrol.app-site/). Do not use the old website — the domain was re-registered.
 
-Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). Chrome Web Store: [AutoControl_mv3](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
+Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). Chrome Web Store listing is **in testing** (not recommended for normal install yet). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
 
 ---
 
@@ -18,27 +18,31 @@ The bigger difference versus other shortcut extensions: your shortcuts and gestu
 
 Run Script is different: Chrome still forbids running scripts **inside** `chrome://` and the Web Store (same as Tampermonkey). A background script can still call ACtl while you are on those pages, but it cannot read or change the page itself. The options UI already has samples such as **Example 1: Download all images** — try them on a normal `https` page with **Allow user scripts** on.
 
-The Chrome Web Store listing is only so people can install it easily. If it infringes the original AutoControl authors’ rights, it will be taken down.
+### Install (Load unpacked — recommended)
 
-### Install (Chrome Web Store — preferred)
+The Chrome Web Store listing is **still in a testing phase**. Please install from this repository for now. Keep the `extension/` folder (do not delete it after loading).
 
-1. Install **AutoControl_mv3** from the [Chrome Web Store](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm).
-2. Open the extension → **Install** the native component → run the installer.
-3. The store build has a **new extension ID**. After Install, if options still show the Install page or hotkeys do nothing: save and run `Allow-AutoControl_mv3-native.bat` (the extension offers a download / notification when Chrome reports the host is **forbidden**), then **reload** the extension on `chrome://extensions`.
-4. `chrome://extensions` → AutoControl_mv3 → **Details**:
-   - **Allow user scripts** — required for Run Script / ACtl.
-   - **Allow access to file URLs** — only for local `file://` paths.
-   - **Allow in Incognito** — only if you want it in incognito windows.
+**Download**
+
+1. GitHub → **Code** → **Download ZIP**
+2. Unzip the archive
+3. Copy the `extension/` folder somewhere convenient and keep it (Chrome loads that directory)
+
+**Install**
+
+1. Open `chrome://extensions`
+2. Turn on **Developer mode**
+3. **Load unpacked** → select the `extension/` folder you copied
+
+Then open the extension → **Install** the native component → run the installer.
+
+`chrome://extensions` → AutoControl_mv3 → **Details**:
+
+- **Allow user scripts** — required for Run Script / ACtl
+- **Allow access to file URLs** — only for local `file://` paths
+- **Allow in Incognito** — only if you want it in incognito windows
 
 Usage data and logs are **off** by default. Turn them on in **Extension options → Advanced Options** (`Send anonymous usage data`, `Log service worker`) if you need them.
-
-### Install (unpacked — fallback)
-
-Keep the `extension/` folder. Chrome loads **that directory**, not the repo root.
-
-1. Clone or download this repository.
-2. `chrome://extensions` → **Developer mode** → **Load unpacked** → `extension/`.
-3. Native **Install** as above. Unpacked still ships the original `key`, so this machine keeps the old native-host ID until you switch to the store public key.
 
 After in-app Install you can delete `reference/AutoControl_native/*.exe` from a git checkout. The extension deploys from `extension/file69.dat` and `file76.dat`.
 
@@ -121,27 +125,31 @@ Chrome 自己改不了全局快捷键，也加不了鼠标手势。AutoControl �
 
 Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店里跑脚本（和 Tampermonkey 一样）。后台脚本在这些页面上仍能调用 ACtl，但不能读、改页面本身。扩展程序选项里已有示例，例如 **Example 1: Download all images**——打开 **允许用户脚本**，在普通 `https` 页上试。
 
-放到网上应用店只是为了方便大家安装。如果对 AutoControl 原开发团队构成侵权，会下架。
+放到网上应用店只是为了方便安装；**当前商店上架仍在测试阶段**，请先用下面的文件夹方式安装。如果对 AutoControl 原开发团队构成侵权，会下架。
 
-### 安装（Chrome 网上应用店 — 推荐）
+### 安装（加载已解压 — 推荐）
 
-1. 从 [Chrome 网上应用店](https://chromewebstore.google.com/detail/autocontrolmv3/ifjogpfnljedincfpelmhaljnllegckm) 安装 **AutoControl_mv3**。
-2. 打开扩展 → **Install** 原生组件 → 运行安装程序。
-3. 商店版是**新的扩展 ID**。Install 之后若选项页还停在 Install，或快捷键没反应：保存并运行 `Allow-AutoControl_mv3-native.bat`（Chrome 报 native host **forbidden** 时扩展会提示下载），然后在 `chrome://extensions` **重载**扩展。
-4. `chrome://extensions` → AutoControl_mv3 → **详细信息**：
-   - **允许用户脚本** — Run Script / ACtl 必需。
-   - **允许访问文件网址** — 只用到本地 `file://` 时才开。
-   - **在隐身模式下启用** — 只在隐身窗口也要用时才开。
+**下载**
+
+1. GitHub → **Code** → **Download ZIP**
+2. 解压
+3. 把里面的 `extension/` 文件夹复制到别处备用（**不要删**；Chrome 一直要读这个目录）
+
+**安装**
+
+1. 打开 `chrome://extensions`（扩展程序）
+2. 打开 **开发者模式**
+3. **加载已解压的扩展程序** → 选择刚才的 `extension/` 文件夹
+
+然后打开扩展 → **Install** 原生组件 → 运行安装程序。
+
+`chrome://extensions` → AutoControl_mv3 → **详细信息**：
+
+- **允许用户脚本** — Run Script / ACtl 必需
+- **允许访问文件网址** — 只用到本地 `file://` 时才开
+- **在隐身模式下启用** — 只在隐身窗口也要用时才开
 
 用量统计和日志**默认关闭**。需要时在 **扩展程序选项 → Advanced Options** 打开 `Send anonymous usage data`、`Log service worker`。
-
-### 安装（加载已解压 — 备用）
-
-请保留 `extension/`。Chrome 加载的是**这个文件夹**，不是仓库根目录。
-
-1. 克隆或下载本仓库。
-2. `chrome://extensions` → **开发者模式** → **加载已解压的扩展程序** → `extension/`。
-3. 同样在扩展里 Install 原生组件。解压版仍带原版 `key`，本机 ID 暂时还是原版那个，直到你换成商店公钥。
 
 应用内 Install 成功后，git 检出里的 `reference/AutoControl_native/*.exe` 可以删。扩展从 `extension/file69.dat` 和 `file76.dat` 部署。
 

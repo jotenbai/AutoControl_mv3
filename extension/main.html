@@ -55,15 +55,18 @@
 					Please describe which specific step doesn't produce the expected result and include a screenshot if possible.
 				</answ> </faq> </installPane> </installWrap> </template> <template id=runInstPane> <runInstPane> <hint> <cap>Run Installer</cap> <svg arrow viewBox="0 0 50 100" preserveAspectRatio="none"> <path head d="M 50,24 L 38,0, L 26,24 Z" /> <path tail d="M 38,24 Q 30 80, 0 100" /> </svg> </hint> </runInstPane> </template> <template id=unsupportedOS>
 	Unfortunately, your operating system is currently not supported. <hr b=3>
-	At the moment, ${EXT.alias} is supported on: <hr b> <li>Windows 7</li> <li>Windows 8/8.1</li> <li>Windows 10</li> <li>Windows 11</li> <hr b=4> <c ACS>Please read <a href="${URLS.faq}">the FAQ</a> to learn why this limitation exists.</c> </template> <template id=natHostNotFound> <msg>
+	At the moment, ${EXT.alias} is supported on: <hr b> <li>Windows 7</li> <li>Windows 8/8.1</li> <li>Windows 10</li> <li>Windows 11</li> <hr b=4> <c ACS>Please read <a href="${URLS.faq}">the FAQ</a> to learn why this limitation exists.</c> </template> 		<template id=natHostNotFound> <msg>
 		Something went wrong. The native component is not working. <hr b=3>
 		It was either uninstalled or it's being blocked by Windows Defender or another <br> antivirus. <hr b>
 		You can try reloading the extension and see if that fixes the problem. Otherwise, <br> try installing the native component again. <hr b=3>
+		If you installed from the <b>Chrome Web Store</b>, also run <b>Allow-AutoControl_mv3-native.bat</b>
+		(Downloads) <b>after</b> Native-Component install/repair — the installer overwrites the
+		whitelist and drops this extension's ID. Then reload. <hr b=3>
 		If the native component is already installed, then check if Windows Defender or <br> your antivirus is blocking a program in this folder: <hr b=3> <center style="font-family: monospace">C:\Users\&lt;user&gt;\AppData\Local\AutoControl\</center> <hr b=3>
 		See this <a href="${URLS.winSecExcl}">Microsoft Article</a> for a possible solution.
 		<hr b=4>
 		Also, make sure you are not affected by any of these <a href="${URLS.chromeBugs}">bugs in Google Chrome</a>.
-		<hr b=2> </msg> <actions> <button value=reload>Reload extension</button> <button value=reinstall>Reinstall native component</button> </actions> </template> <template id=installTrouble>
+		<hr b=2> </msg> <actions> <button value=reload>Reload extension</button> <button value=reinstall>Reinstall native component</button> <button value=allowOrigin>Allow this extension ID</button> </actions> </template> <template id=installTrouble>
 	It seems you are having trouble installing the Native Component. <hr b=2>
 	The most common issue occurs when Windows Defender or another <br> antivirus blocks the program from being saved or executed. <hr b=3>
 	Read the help tips below for more details.
