@@ -194,6 +194,61 @@
     // ping callback hasn't fired yet (SW may be asleep — runtime.sendMessage
     // then never calls back and _Eu would otherwise stay unresolved).
     try { if (typeof _Eu !== 'undefined' && _Eu.send) _Eu.send(window._nd || false, !0); } catch(e) {}
+
+    // AC-MV3 (2026-10-10, ported): install pane can miss ac-install-done if
+    // nativeConfigReady arrives before the listener is registered. Watch
+    // until pane + natHostInstalled are both true (or ~42s / already done).
+    if (!window._nd) {
+      let paneTries = 0;
+      const paneWatch = setInterval(() => {
+        if (window.__acPaneTransitioned) { clearInterval(paneWatch); return; }
+        if (++paneTries > 60) { clearInterval(paneWatch); return; }
+        if (!document.body || !document.body.classList.contains('installPane')) return;
+        try {
+          chrome.storage.local.get(['natHostInstalled', '__acUninstalling'], r2 => {
+            if (r2 && r2.natHostInstalled && !r2.__acUninstalling) {
+              window.__acPaneTransitioned = true;
+              console.log("[AC-MV3] install pane shown but the native is up — transitioning to settings");
+              window.dispatchEvent(new CustomEvent('ac-install-done'));
+              clearInterval(paneWatch);
+            }
+          });
+        } catch (e) {}
+      }, 700);
+    }
+    window.__acBootNoNative = !window._nd;
+  });
+
+  // AC-MV3 (2026-10-11, ported): page that booted without native can stay
+  // stuck on install/error UI after SW reconnects — force the same
+  // ac-install-done transition, or close stale native-status dialogs.
+  window.addEventListener('ac-sw-msg', ev => {
+    const m = ev && ev.detail;
+    if (!m || (m.type !== 'nativeConfigReady' && m.type !== 'nativeConnected')) return;
+    if (window.__acBootNoNative === true) {
+      if (window.__acPaneTransitioned) return;
+      try {
+        chrome.storage.local.get(['__acUninstalling'], r2 => {
+          if (r2 && r2.__acUninstalling) return;
+          if (window.__acPaneTransitioned) return;
+          window.__acPaneTransitioned = true;
+          console.log("[AC-MV3] reconnect: page booted without the native — leaving the install/waiting UI");
+          try { window.dispatchEvent(new CustomEvent('ac-install-done')); } catch (e) {}
+        });
+      } catch (e) {}
+      return;
+    }
+    try {
+      if (typeof $ !== 'function' || typeof _gs !== 'function') return;
+      $("dialog").each(function () {
+        const t = $(this).text() || "";
+        if (t.indexOf("Native Component not working") >= 0 ||
+            t.indexOf("Starting Native Component") >= 0) {
+          console.log("[AC-MV3] reconnect: closing a stale native-status window");
+          _gs(this);
+        }
+      });
+    } catch (e) {}
   });
 
   // ======== PAGE STATE SYNC ========

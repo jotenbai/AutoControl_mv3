@@ -2051,6 +2051,7 @@
     try { chrome.storage.local.remove("__acAutoReloaded"); } catch(e) {}
 
     console.log("[AC-MV3] Native connected successfully!");
+    try { setTimeout(() => { try { __acEnsureNativeBundle(); } catch (e) {} }, 800); } catch (e) {}
     __acEnsureNativeOrigin();
     // AC-MV3 FIX (2026-09-26): leave capture OFF after handshake. A stuck
     // type-40 capture (or a half-dead host after Reinstall) can make the OS
@@ -2508,6 +2509,11 @@
       } catch(e) {}
     }
 
+    // AC-MV3 DIAG: patched engine may send type 792 (MSAA role under cursor).
+    if (type === 792) {
+      try { self.__acZone = data; console.log(`[AC-MV3-SW] ← 792 zone role=${data}`); } catch (e) {}
+    }
+
     // Buffer native messages (except 710=promise resolution) for late-connecting pages
     if (type !== 710) {
       nativeMsgBuffer.push({ type, data, ts: Date.now() });
@@ -2569,10 +2575,20 @@
       }
     }
 
-    if (__acHoldChromeUi) {
-      // Esc at 20ms on the still-focused old tab; Open URL ~15ms later.
+    // ZONE GATE (ported 2026-10-18): broadcast 750 immediately; dispatch may
+    // wait for the external zone helper. Fork chrome:// Open URL hold +
+    // RBTN-ESC still apply before dispatch.
+    if (type === 750) {
+      broadcast({ type: "nativeMsg", nativeType: type, _live: true, data, _ts: Date.now() });
+      if (__acHoldChromeUi) {
+        const hold = RBTN_ESC_DELAY_MS + AC_GESTURE_CHROME_UI_HOLD_MS;
+        console.warn("[AC-MV3] RBTN-ESC: holding chrome:// Open URL " + hold + "ms so Esc does not hit the new WebUI");
+        setTimeout(() => __acDispatchTrigger750(data, Date.now()), hold);
+      } else {
+        __acDispatchTrigger750(data, Date.now());
+      }
+    } else if (__acHoldChromeUi) {
       const hold = RBTN_ESC_DELAY_MS + AC_GESTURE_CHROME_UI_HOLD_MS;
-      console.warn("[AC-MV3] RBTN-ESC: holding chrome:// Open URL " + hold + "ms so Esc does not hit the new WebUI");
       setTimeout(__acForwardNative, hold);
     } else {
       __acForwardNative();
@@ -3408,6 +3424,16 @@
           console.log(`[AC-MV3-SW] Replaying ${nativeMsgBuffer.length} buffered messages to new page`);
         }
         sendRes(pingResponse); return true;
+      case "acUninstallNative":
+        try {
+          if (typeof __acUninstallNative === "function") {
+            __acUninstallNative().then(ok => sendRes({ ok: !!ok })).catch(e => sendRes({ ok: false, error: String(e && e.message || e) }));
+          } else sendRes({ ok: false, error: "no __acUninstallNative" });
+        } catch (e) { sendRes({ ok: false, error: String(e && e.message || e) }); }
+        return true;
+      case "nativeState":
+        sendRes({ connected: !!connected, handshakeDone: !!handshakeDone, port: !!port });
+        return true;
       case "patchNativeOrigin":
         // Page Install / "Allow native ID" button (user gesture) — download
         // Allow-*.bat. Must NOT download from connectNative-forbidden alone
@@ -3977,6 +4003,831 @@
   // have not already seeded. Never writes natHostInstalled — that flag would
   // skip the native Install UI. Existing profiles with actions are untouched.
   // Runs BEFORE connect() so the first type-60 handshake sees the samples.
+// ---- AC-MV3 ZONE GATE (2026-09-03, multi-zone 2026-09-12) ----
+  // The abandoned engine cannot classify zones on Chrome 148+: its hover
+  // cache never refreshes over the tabs AND a fresh MSAA call from the
+  // LL-hook context deadlocks (RE doc §12). Workaround: the external helper
+  // `ac_zone_helper` (native host, no hooks) answers "what zone is under the
+  // cursor?" from a normal process context. Triggers with mouseOver preconds
+  // are dispatched ONLY after the helper confirms the zone.
+  // The helper answers a SET of zones ({zones:[...]}) because several zones
+  // can match one point (the omnibox is inside the toolbar band, the page is
+  // inside the browser window) — the engine evaluated every trigger's region
+  // independently. The gate fires the trigger when the sets INTERSECT.
+  // Supported zones: 1 window, 3 page, 4 title area, 12 tab, 15 close,
+  // 16 new-tab "+", 17 speaker, 20 toolbar, 21 omnibox, 30 menu button,
+  // 33 bookmark. NOT implemented (no MSAA signature yet): the 40-51 menu
+  // items — see Docs/TODO-mouseover-zones.md.
+  const ZONE_HOST = 'com.autocontrol.zonehelper';
+  // Regions the helper can verify via MSAA. Menu-item regions (40-51) are
+  // deliberately absent: the native menu has no MSAA signature, the engine
+  // classifies those itself (engine zone ids 60-71 = UI 40-51 + 20).
+  const __AC_ZONE_KNOWN = [1, 3, 4, 12, 15, 16, 17, 20, 21, 30, 33];
+  // Zone answers are shared for this long (one input burst — see __acZoneAsk).
+  // Long enough to cover the engine's multi-trigger 750 burst, short enough
+  // that two deliberate wheel notches get fresh answers.
+  const __AC_ZONE_CACHE_MS = 120;
+  let __acZoneCacheZones = null;
+  let __acZoneCacheAt = 0;
+  let __acZoneCachePend = null;
+  let __acZoneMap = null;              // {trigId: [regions]} from trigActList
+  let __acZoneFree = {};               // {trigId: true} — some combo has NO mouse-over
+  let __acZoneMapBuilt = false;
+  let __acZonePort = null;             // warm connectNative port
+  let __acZonePend = {};               // {seq: resolver}
+  let __acZoneTabPend = {};            // {seq: resolver} - native type 485 answers
+  // The tab under the cursor as the ZONE HELPER sees it. Kept here (not only in
+  // the bundle's _kg) because the bundle CLEARS _kg whenever the tab list
+  // changes: _rf runs `yield _Rf()` at the start of every action and that calls
+  // _wd() → `_kg = null`. So a pre-dispatch refresh alone was undone by the
+  // action itself (verified 2026-09-20: the filter saw kg=null although the
+  // refresh had just set it).
+  let __acHoveredTabId = null;
+  let __acZoneSeq = 0;
+  // Triggers whose ACTIONS can ask for the tab under the cursor, and whether the
+  // map has been built yet. The pre-dispatch refresh (__acSetHoveredTab) costs an
+  // accessibility walk (79-219 ms, measured) whenever the cursor is on a point
+  // the helper has not classified yet - which is exactly the case for a wheel
+  // over the tab strip. Running it for an action that never asks for the hovered
+  // tab is pure latency: switching tabs with a wheel became noticeably delayed
+  // while Alt+wheel (an action with no zone check) stayed instant (user report
+  // 2026-10-05). Only the triggers that need it pay for it now.
+  let __acHoverNeeded = {};
+  let __acHoverNeededReady = false;
+
+  function __acBuildZoneMap() {
+    __acZoneMapBuilt = true;
+    try {
+      chrome.storage.local.get('trigActList', r => {
+        const m = {};
+        const free = {};
+        const needHover = {};
+        for (const [id, t] of (r.trigActList || [])) {
+          // `disabled` groups are NOT compiled into the type-60 payload (see
+          // _mh: `m.disabled || K(m.triggers …)`), so they must not gate
+          // anything either.
+          if (!t || t.disabled) continue;
+          // Does any action of this trigger target the tab under the cursor?
+          // `hoveredTabs` is the UI's "Hovered tab" (the STORAGE name - the
+          // bundle's own field for the filter is `anyHvrd`, do not confuse
+          // them); `eventTabs` is resolved from the hovered tab too when the
+          // engine supplies no event tab (see the _pp patch below); any other
+          // target ("currentTab", "tse:N", "allTabs", …) never reads the hover
+          // position. Match loosely so a renamed target still counts.
+          let hv = false;
+          for (const a of (t.actions || [])) {
+            const tg = a && a.targets;
+            if (typeof tg === 'string' && (/hovered/i.test(tg) || tg === 'eventTabs')) hv = true;
+          }
+          if (hv) needHover[String(id)] = true;
+          const zones = [];
+          let unscoped = false;
+          for (const tr of (t.triggers || [])) {
+            const mo = tr && tr.preconds && tr.preconds.mouseOver;
+            let scoped = false;
+            if (Array.isArray(mo)) for (const x of mo) {
+              if (x && x.region != null) {
+                scoped = true;
+                if (!zones.includes(x.region)) zones.push(x.region);
+              }
+            }
+            if (!scoped) unscoped = true;   // this combo fires without a zone condition
+          }
+          if (zones.length) m[String(id)] = zones;
+          if (unscoped) free[String(id)] = true;
+        }
+        __acZoneMap = m;
+        __acZoneFree = free;
+        __acHoverNeeded = needHover;
+        __acHoverNeededReady = true;
+        console.warn('[AC-MV3-ZONE] zone map:', JSON.stringify(m),
+          'unscoped (no zone check):', JSON.stringify(Object.keys(free)),
+          'need hovered tab:', JSON.stringify(Object.keys(needHover)));
+      });
+    } catch (e) {
+      console.warn('[AC-MV3-ZONE] map build failed:', e.message);
+    }
+  }
+  // Rebuild the zone map whenever the config changes (live, like the
+  // config chain) — a stale map made zone-gated triggers silently dead
+  // after the user edited a trigger (2026-09-03).
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.trigActList) {
+        __acZoneMapBuilt = false;
+        __acBuildZoneMap();
+      }
+    });
+  } catch (e) {} // listener registration only — safe to ignore
+
+  function __acZoneAsk(timeoutMs) {
+    // released for uninstall: do not reconnect (would respawn the helper)
+    if (Date.now() < __acZoneReleasedUntil) return Promise.resolve([-3]);
+    // BURST CACHE (2026-09-12): one physical input event makes the engine emit
+    // a 750 for EVERY trigger that matches its key — those arrive within a few
+    // ms, and each one used to re-ask the helper. Between two of those queries
+    // the UI can CHANGE under the cursor (Chrome scrolls the tab strip on
+    // wheel, a tab opens, ...), so the burst saw DIFFERENT zones: the zone-15
+    // trigger's 750 arrived just after the strip scrolled and got zone 12 →
+    // skipped ("wheel over the tab's close button does nothing"). Share ONE
+    // answer per burst instead: a short TTL cache + a shared in-flight promise.
+    const now = Date.now();
+    if (__acZoneCacheZones && now - __acZoneCacheAt < __AC_ZONE_CACHE_MS) {
+      return Promise.resolve(__acZoneCacheZones);
+    }
+    if (__acZoneCachePend) return __acZoneCachePend;   // reuse the in-flight query
+    __acZoneCachePend = new Promise(res => {
+      const id = ++__acZoneSeq;
+      __acZonePend[id] = res;
+      const t = setTimeout(() => { delete __acZonePend[id]; res([-2]); }, timeoutMs || 250);
+      try {
+        if (!__acZonePort) {
+          __acZonePort = chrome.runtime.connectNative(ZONE_HOST);
+          __acZonePort.onMessage.addListener(m => {
+            if (m && m.__id != null && __acZoneTabPend[m.__id]) {
+              const r = __acZoneTabPend[m.__id];
+              delete __acZoneTabPend[m.__id];
+              r({ hWnd: m.hWnd, index: m.index, title: m.title, x: m.x, y: m.y });
+              return;
+            }
+            if (m && m.__id != null && __acZonePend[m.__id]) {
+              const r = __acZonePend[m.__id];
+              delete __acZonePend[m.__id];
+              // AC-MV3 (2026-09-12): the helper answers the full matching SET
+              // ({zones:[...]}) plus the most specific zone ({zone:N}) for
+              // back-compat. Several zones can be true at the same point (the
+              // omnibox is inside the toolbar band, the page is inside the
+              // browser window) — the original engine evaluated each trigger's
+              // region independently, so the gate must INTERSECT sets.
+              r(Array.isArray(m.zones) && m.zones.length ? m.zones : [m.zone]);
+            }
+          });
+          __acZonePort.onDisconnect.addListener(() => {
+            __acZonePort = null;
+            const pend = __acZonePend;
+            __acZonePend = {};
+            for (const k in pend) pend[k]([-1]);
+            const tpend = __acZoneTabPend;
+            __acZoneTabPend = {};
+            for (const k in tpend) tpend[k](null);
+          });
+        }
+        __acZonePort.postMessage({ __id: id });
+      } catch (e) {
+        clearTimeout(t);
+        delete __acZonePend[id];
+        res([-1]);
+      }
+    }).then(zs => {
+      if (Array.isArray(zs) && zs.length && zs[0] >= 0) {   // cache real answers only
+        __acZoneCacheZones = zs;
+        __acZoneCacheAt = Date.now();
+      }
+      __acZoneCachePend = null;
+      return zs;
+    });
+    return __acZoneCachePend;
+  }
+
+  // --- native type 485: "which tab is under the mouse" ---------------------
+  // The ORIGINAL engine answered this with the tab's identity (index or title)
+  // because its a11y hit-test could see the tabs. On Chrome 148+ that
+  // hit-test finds nothing, so the reply is only {hWnd,x,y} - and the bundle's
+  // _ys() (file50) then resolves NO tab, caches an empty list and every
+  // "hoveredTabs" action silently falls back to the ACTIVE tab:
+  //   file59 _Mg:  c = _ys(); if (!c.length) c = [activeTab]
+  // Measured 2026-09-20 with the wheel benchmark (_bench_watch.js): 12 wheel
+  // notches over 4 different tabs -> every reload went to the ACTIVE tab
+  // (user report: "on another tab it no longer reacts").
+  // The zone helper CAN see the tab under the cursor (role 37 PAGETAB + its
+  // position in the strip), so 485 is answered from there. If the helper is
+  // down or the cursor is not over a tab, the original native call is used.
+  function __acZoneTabAsk(timeoutMs) {
+    return new Promise(res => {
+      const id = ++__acZoneSeq;
+      const t = setTimeout(() => { delete __acZoneTabPend[id]; res(null); }, timeoutMs || 400);
+      try {
+        if (!__acZonePort) __acZoneAsk(1);      // opens the port (and the helper)
+        if (!__acZonePort) { clearTimeout(t); return res(null); }
+        __acZoneTabPend[id] = v => { clearTimeout(t); res(v); };
+        __acZonePort.postMessage({ __id: id, tab: 1 });
+      } catch (e) {
+        clearTimeout(t);
+        delete __acZoneTabPend[id];
+        res(null);
+      }
+    });
+  }
+
+  try {
+    if (typeof window._Vy === 'function' && !window.__acVyWrapped) {
+      const __acOrigVy = window._Vy;
+      window._Vy = function (a, b, c) {
+        const orig = __acOrigVy(a, b, c);        // returns (cb) => _Lk(a,b,cb,c)
+        if (a !== 485 || typeof orig !== 'function') return orig;
+        return function (cb) {
+          __acZoneTabAsk(400).then(info => {
+            if (info && info.hWnd && typeof info.index === 'number' && info.index >= 0) {
+              try { cb(info); } catch (e) {}
+            } else {
+              try { orig(cb); } catch (e) {}
+            }
+          }).catch(() => { try { orig(cb); } catch (e) {} });
+        };
+      };
+      window.__acVyWrapped = true;
+    }
+  } catch (e) {}
+
+  // --- the tab under the cursor: the SINGLE resolution point ------------------
+  // `_ys()` (file50) is THE function that answers "which tab is under the
+  // cursor": both the "Hovered tab" target (`_Mg` → `a.anyHvrd` → `_ys()`) and
+  // the `hovered` tab-filter property (file59) go through it.
+  // It returns the bundle's own cache `_kg` when set - and `_kg` is ONLY
+  // dropped by `_wd()` (a tab-list change), so it is routinely STALE: user
+  // report 2026-09-21 "on a fast cursor move the PREVIOUS tab reloads" (the
+  // first wheel fills `_kg` with tab N, the next wheel over tab N+1 still sees
+  // tab N). The pre-dispatch refresh (__acSetHoveredTab) cannot fix that alone:
+  // `_rf` runs `yield _Rf()` FIRST in every action and that may call `_wd()` →
+  // `_kg = null` → `_ys()` then starts its async resolution and returns `[]` →
+  // `_Mg` falls back to the ACTIVE tab (the other half of the same report).
+  // The helper (see __acSetHoveredTab) knows the tab under the cursor NOW, so:
+  // when it does, that answer wins; otherwise the bundle resolves it as before
+  // (cursor NOT over a tab → the documented active-tab fallback stays).
+  try {
+    if (typeof _ys === 'function' && !window.__acYsWrapped) {
+      const __acOrigYs = _ys;
+      _ys = function () {
+        if (__acHoveredTabId != null) {
+          // Do NOT call the original here: it would start the bundle's own
+          // resolution, which asks the native 485 (answered from the helper by
+          // the _Vy wrapper) - a SECOND accessibility walk per event. The helper
+          // is single-threaded, so the two walks queue up and the answers arrive
+          // 180-360 ms late (measured 2026-09-21: `TAB-REQ` twice per wheel,
+          // the second answer 344 ms after the first), which made the tab
+          // identity lag behind a fast cursor. `_kg` is only read by `_ys`
+          // itself (`_wd()` clears it), so skipping the call is safe.
+          try { __acOrigYs.apply(this, arguments); } catch (e) {}
+          return [__acHoveredTabId];
+        }
+        return __acOrigYs.apply(this, arguments);
+      };
+      window.__acYsWrapped = true;
+    }
+  } catch (e) {}
+
+  // --- "Event tab" target fallback ------------------------------------------
+  // The "Event tab" target (file59 `eventTabs` → filter `evtTabs`) resolves to
+  // `_Eh(_zw)` — the tab ids the ENGINE attached to the event. On Chrome 148+
+  // the engine can no longer identify the tab under the mouse, so for a wheel /
+  // click over the tab strip the event carries NO tab at all: the filter
+  // returns an empty group and an action like "Reload tabs" does NOTHING
+  // (user report 2026-09-20: "something does not work" — the trigger fired, the
+  // action reported OK, and no tab reloaded).
+  // The documented semantics for a tab-strip event IS that tab ("A tab in the
+  // tab strip" → that tab; "any other part of the browser window gives the
+  // active tab"), and the tab under the cursor is known (the zone helper, see
+  // __acSetHoveredTab). So: when the engine supplied no event tab AND the
+  // cursor really is over a tab, use that tab; otherwise keep the original
+  // result (active-tab fallback stays for non-tab areas).
+  try {
+    // NOTE: wrapping window._Mg does NOT work — `_pp` (the filter table in
+    // file59) captured the function object at load time, so the table itself
+    // must be patched. `_pp` is a `const` OBJECT, but its properties are
+    // writable; both `filter` and `posFilter` point at the same function.
+    if (typeof _pp === 'object' && _pp && !window.__acMgWrapped) {
+      const __acOrigFilter = _pp.filter;
+      const __acFilter = function (b, a) {
+        const r = __acOrigFilter(b, a);
+        try {
+          if (!a) return r;
+          const empty = !r || !r.length || !r[0] || !r[0].length;
+          if (!empty) return r;
+          // "Event tab": the engine supplied no tab for the event.
+          // "Hovered tab": the bundle's own resolution came back empty (its
+          // _kg may have been cleared by _wd, see __acHoveredTabId).
+          if (!(a.evtTabs || a.anyHvrd)) return r;
+          const hv = (__acHoveredTabId != null) ? [__acHoveredTabId]
+                   : (_kg && _kg.length ? _kg : null);
+          if (hv) {
+            const hit = b.filter(id => hv.indexOf(id) !== -1);
+            if (hit.length) return [hit];
+          }
+        } catch (e) {}
+        return r;
+      };
+      _pp.filter = __acFilter;
+      _pp.posFilter = __acFilter;
+      window.__acMgWrapped = true;
+    }
+  } catch (e) {}
+
+  // --- hoveredTabs freshness -----------------------------------------------
+  // The bundle resolves "the tab under the cursor" ONCE and caches it in the
+  // global _kg (file50 `_ys`), and the cache is only dropped by _wd() — which
+  // runs when the TAB LIST changed (file37 `_Rf` → `_Fk`). So an action kept
+  // targeting the FIRST hovered tab: user report 2026-09-20 "it sticks on the
+  // tabs where I scrolled — it works on them, but on another tab it no longer
+  // reacts", and the wheel benchmark showed the cursor moving over 4 different
+  // tabs while every single reload hit one and the same tab.
+  // Before dispatching, refresh the cache from the zone helper, which sees the
+  // tab under the cursor (the native 485 no longer identifies it, see above).
+  // The helper answers from its own cache in a few ms; the timeout is short so
+  // a dead helper cannot stall the action queue (the cache is then cleared and
+  // the bundle resolves it on its own).
+  function __acSetHoveredTab() {
+    // 900 ms: the helper answers from its own cache in ~1 ms when its heartbeat
+    // has already classified the point, but a FRESH accessibility walk takes
+    // 60-300 ms and it COMPETES with the heartbeat's own zone walk (measured
+    // 2026-10-04 in Chrome 148: the tab answer arrived in the same millisecond
+    // the old 300 ms timeout fired, so the action fell back to the ACTIVE tab -
+    // "reloads the active tab" on a burst of wheels). A missed answer means "no
+    // hovered tab known", which is exactly that fallback, so waiting longer is
+    // strictly better than giving up: the action runs a few hundred ms late
+    // instead of on the wrong tab.
+    return __acZoneTabAsk(900).then(info => {
+      try {
+        if (!info || typeof info.index !== 'number' || info.index < 0) { _kg = null; __acHoveredTabId = null; return; }
+        let winId = null;
+        try { winId = _Or && _Or[info.hWnd]; } catch (e) {}
+        return new Promise(res => {
+          try {
+            chrome.tabs.query(winId != null ? { windowId: winId } : {}, tabs => {
+              try {
+                const list = (tabs || []).slice().sort((a, b) => a.index - b.index);
+                const t = list[info.index];
+                _kg = t ? [t.id] : null;
+                __acHoveredTabId = t ? t.id : null;
+              } catch (e) { _kg = null; __acHoveredTabId = null; }
+              res();
+            });
+          } catch (e) { _kg = null; __acHoveredTabId = null; res(); }
+        });
+      } catch (e) { try { _kg = null; __acHoveredTabId = null; } catch (e2) {} }
+    }).catch(() => { try { _kg = null; __acHoveredTabId = null; } catch (e) {} });
+  }
+
+  function __acDispatchTrigger750(data, ts) {
+    // AC-MV3 FIX (2026-09-04): re-sync the bundle _Sk right before each
+    // dispatch — mv3_native_shim.js re-stamps _Sk on every nativeConfigReady
+    // (force config refresh) and can drift a day past the handshake value
+    // the engine encodes with; z[750] then decodes triggerId wrong and the
+    // action never runs even though this gate logs "executing". The engine's
+    // authoritative offset is handshakeSk (captured at handshake).
+    try { _Sk = handshakeSk; } catch(e) {}
+    const decoded = data && data.id ? (16777215 & (data.id - handshakeSk)) : '?';
+    const zid = String(decoded);
+    const zones = __acZoneMap && __acZoneMap[zid];
+    // The hovered-tab cache is refreshed right before the action runs (see
+    // __acSetHoveredTab) — but ONLY for the triggers whose actions can ask for
+    // the tab under the cursor (see __acHoverNeeded): the refresh costs an
+    // accessibility walk on a new point, and paying it for "switch to the next
+    // tab" only made the wheel slow. Until the map has been built the refresh
+    // runs unconditionally (the safe, pre-2026-10-05 behaviour).
+    const needHover = !__acHoverNeededReady || __acHoverNeeded[zid] === true;
+    const doDispatch = () => (needHover ? __acSetHoveredTab() : Promise.resolve()).then(
+      () => __acDispatch({ type: "nativeMsg", nativeType: 750, _live: true, data, _ts: ts }));
+    if (!zones) { doDispatch(); return; }          // not zone-gated → as before
+    // ONE ACTION, SEVERAL COMBOS (2026-09-13, user report): the native's 750
+    // names the ACTION, not the combo that matched, so the regions collected
+    // from ALL combos of an action used to be applied to every one of its 750s.
+    // "Left Alt + Vert. Wheel" next to a "Vert. Wheel over Browser tab" combo
+    // therefore fired ONLY while the cursor was over that zone (and adding
+    // "mouse over Browser window" to it 'fixed' the trigger because zone 1
+    // matches everywhere over the browser). A combo WITHOUT a mouse-over
+    // condition must not be judged by its siblings' zones — the engine has
+    // already applied the region decision for the region-scoped combos (v19
+    // reads the very same helper table).
+    if (__acZoneFree[zid]) {
+      console.warn(`[AC-MV3-ZONE] trig ${zid}: a sibling combo has no mouse-over condition → executing without the zone check`);
+      doDispatch();
+      return;
+    }
+    // Only the regions the helper can actually verify are checked here. The
+    // AutoControl MENU-ITEM regions (UI 40-51 → engine 60-71) are classified
+    // by the ENGINE itself (it knows which menu item is hovered and of what
+    // kind) — the helper has no signature for the native menu, so a trigger
+    // whose regions are ALL menu-item regions must pass with the engine's
+    // verdict. Otherwise the gate would block every menu-item trigger
+    // ("wheel over a menu item" never fired — regression found 2026-09-12).
+    const check = zones.filter(z => __AC_ZONE_KNOWN.indexOf(z) !== -1);
+    if (!check.length) { doDispatch(); return; }   // engine-classified regions only
+    // 500 ms: a FRESH helper classification (the cursor just moved) walks the
+    // accessibility tree and can take 100-300 ms when Chrome's tree is waking.
+    // With the old 250 ms the answer timed out (`zones=[-2]`), the gate SKIPPED
+    // the trigger and the first wheel notch after a fast move did nothing
+    // (user report 2026-09-21). The action runs a few hundred ms late instead of
+    // not at all - the engine has already applied the same region decision.
+    __acZoneAsk(500).then(zoneSet => {
+      // Helper answers an ARRAY of all zones under the cursor; the trigger
+      // fires when ANY of its verifiable regions is in that set.
+      const zs = Array.isArray(zoneSet) ? zoneSet : [zoneSet];
+      const hit = check.some(z => zs.indexOf(z) !== -1);
+      if (hit) {
+        console.warn(`[AC-MV3-ZONE] trig ${zid}: zones=[${zs.join(',')}] ∩ ${JSON.stringify(check)} → executing`);
+        doDispatch();
+      } else {
+        console.warn(`[AC-MV3-ZONE] trig ${zid}: zones=[${zs.join(',')}] ∉ ${JSON.stringify(check)} → skipped`);
+      }
+    });
+  }
+
+  __acBuildZoneMap();
+
+  // AC-MV3 ZONE KEEPALIVE (2026-09-12, v19 engine): the patched engine asks
+  // the zone helper for the regions under the cursor (a table the helper keeps
+  // in the engine's memory). Two things depend on the helper RUNNING:
+  //   1. a trigger can only fire when the table says "this region matches", so
+  //      without the helper nothing zone-gated ever fires (and the SW would
+  //      never ask for a zone — the helper is started lazily by a zone request);
+  //   2. the table must stay fresh while the cursor moves.
+  // A periodic request solves both: it starts the helper after an SW restart,
+  // keeps its background heartbeat alive and re-spawns it if it dies.
+  setInterval(() => {
+    if (Date.now() < __acZoneReleasedUntil) return;   // released for uninstall
+    // AC-MV3 (2026-10-11): the helper only matters while the engine is
+    // connected (the engine asks it for the zone table; a 750 can only arrive
+    // through the engine). Without this guard the interval kept calling
+    // connectNative(helper) every 2.5 s while the main native was gone (the
+    // uninstall window) — Chrome logged "Unchecked runtime.lastError:
+    // Specified native messaging host not found" each time (user log A,
+    // 2026-10-11). The helper is reconnected on demand by the next real ask.
+    if (!connected) return;
+    try { __acZoneAsk(300); } catch (e) {}
+  }, 2500);
+
+  // ======== NATIVE BUNDLE SYNC (2026-10-10): patched engine + zone helper ========
+  // The extension ships the PATCHED engine (file76.dat) and the zone helper
+  // (ac_zone_helper.dat). Both deployed copies are kept in sync with the bundle:
+  //   * engine missing/foreign/unpatched -> taskkill + type-250 write + a clean
+  //     reconnect (a fresh Zero spawns the new engine);
+  //   * zone helper missing/outdated -> write + `reg add` for every known
+  //     Chromium vendor branch (HKCU, no elevation) + a port reconnect to the
+  //     new exe; a poisoned per-SW host-lookup cache is healed by ONE extension
+  //     reload (same pattern as the fresh-install auto-reload).
+  // The check runs once per SW session (short throttle) after a successful
+  // handshake and is FORCED after an extension update/repair. The user-facing
+  // notice (file71 popup + chrome.notifications) fires only when a deploy
+  // actually failed. Full protocol: Docs/BUILD-NATIVE.md section D.
+  const __AC_ENGINE_EXE = 'AutoCtrl_2025.4.22.0.exe';
+  const __AC_HELPER_EXE = 'ac_zone_helper.exe';
+  const __AC_HELPER_MANIFEST = 'com.autocontrol.zonehelper.json';
+  const __AC_HELPER_DAT = 'ac_zone_helper.dat';
+  const __AC_NATIVE_CHECK_TTL = 60 * 1000;
+  // Bump when the registration payload changes (v2 = the engine host keys are
+  // added for every vendor branch, 2026-10-10): existing installs that carry an
+  // older marker re-register once, so the new keys appear without a helper
+  // rewrite.
+  const __AC_HOST_REG_VERSION = 2;
+  // Every known Chromium vendor branch (HKCU). Opera/Vivaldi/Edge/Brave keep
+  // their own keys; registering all of them is harmless and covers portables.
+  const __AC_HELPER_REG_KEYS = [
+    'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Google\\Chrome SxS\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\BraveSoftware\\Brave-Browser\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Opera Software\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Vivaldi\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Chromium\\NativeMessagingHosts\\com.autocontrol.zonehelper',
+    'HKCU\\Software\\Yandex\\YandexBrowser\\NativeMessagingHosts\\com.autocontrol.zonehelper'
+  ];
+  // The same vendor branches for the ENGINE host (`hrich.autocontrol`). The
+  // original installer registers ONLY the Chrome branch, so a second browser
+  // (Vivaldi, Opera, Edge...) needs its own key or connectNative fails there
+  // (user live report 2026-10-10: the second-browser install needed a manual
+  // registry step). The engine manifest pins our extension ID in
+  // allowed_origins, so registering every branch is safe; the manual README
+  // commands stay as a fallback.
+  const __AC_ENGINE_REG_KEYS = __AC_HELPER_REG_KEYS.map(k =>
+    k.replace('com.autocontrol.zonehelper', 'hrich.autocontrol'));
+  let __acNativeCheckRunning = false;
+  let __acNativeCheckForce = false;
+  let __acReloadScheduled = false;   // set when __acHelperVerify reloads the SW once
+  // Uninstall release (2026-10-10): while the native component is being
+  // uninstalled the zone helper must NOT be respawned (the uninstaller deletes
+  // the folder and a running ac_zone_helper.exe locks its exe). The keepalive
+  // and the helper sync stand down until this timestamp.
+  let __acZoneReleasedUntil = 0;
+  // set when a connect FAILS inside the release window: the native is really
+  // gone, so the next successful connect is the reinstall and must force the
+  // bundle sync (the 60 s check throttle would otherwise skip it and the zone
+  // helper would stay missing until an extension reload — user report 2026-10-10)
+  let __acUninstallDone = false;
+
+  function __acSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function __acStorageGet(key) {
+    return new Promise(r => { try { chrome.storage.local.get([key], o => r(o && o[key])); } catch (e) { r(undefined); } });
+  }
+  function __acStorageSet(obj) { try { chrome.storage.local.set(obj); } catch (e) {} }
+  /** Bound a promise so a stuck native round-trip cannot wedge the sync. */
+  function __acTimeout(p, ms, fallback) {
+    return new Promise(res => {
+      let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; res(fallback); } }, ms);
+      p.then(v => { if (!done) { done = true; clearTimeout(t); res(v); } },
+             () => { if (!done) { done = true; clearTimeout(t); res(fallback); } });
+    });
+  }
+
+  /** Read a file from the native host folder (type 255, binary). Resolves to
+   *  the byte-string, null when the file does not exist, undefined on error. */
+  function __acNativeRead(name) {
+    return __acTimeout(new Promise(res => {
+      if (typeof _If !== 'function') { res(undefined); return; }
+      try {
+        _If(name, '', 0, 786000)(r => {
+          if (r && typeof r.content === 'string') res(r.content);
+          else res(null);
+        });
+      } catch (e) { res(undefined); }
+    }), 10000, undefined);
+  }
+  /** Decode a bundled .dat payload; resolves to its byte-string or null. */
+  function __acBundlePayload(name) {
+    return __acTimeout(new Promise(res => {
+      if (typeof _3t !== 'function') { res(null); return; }
+      try {
+        _3t(chrome.runtime.getURL(name), 'binary')(d => res(typeof d === 'string' && d.length ? d : null));
+      } catch (e) { res(null); }
+    }), 10000, null);
+  }
+  /** Write a file through the native (type 250, chunked). */
+  function __acNativeWrite(name, data) {
+    return __acTimeout(new Promise(res => {
+      if (typeof _4u !== 'function') { res(false); return; }
+      try {
+        _4u(name, data)(r => res(r === 0 || r === false || r === undefined || r === null));
+      } catch (e) { res(false); }
+    }), 30000, false);
+  }
+  /** Run a cmd.exe command through the native (type 260; ack when cmd STARTS). */
+  function __acRunCmd(cmd) {
+    return __acTimeout(new Promise(res => {
+      if (typeof _iw !== 'function') { res(false); return; }
+      try { _iw(cmd)(() => res(true)); } catch (e) { res(false); }
+    }), 10000, false);
+  }
+
+  function __acHelperManifestText() {
+    return JSON.stringify({
+      name: 'com.autocontrol.zonehelper',
+      description: 'AutoControl MV3 zone classifier helper',
+      path: __AC_HELPER_EXE,
+      type: 'stdio',
+      allowed_origins: ['chrome-extension://' + chrome.runtime.id + '/']
+    }, null, 2);
+  }
+
+  function __acRegisterHelperHost() {
+    const helperManifest = '%LOCALAPPDATA%\\AutoControl\\' + __AC_HELPER_MANIFEST;
+    const engineManifest = '%LOCALAPPDATA%\\AutoControl\\AutoControl.manifest';
+    const addAll = (keys, manifest) => keys.reduce((p, key) =>
+      p.then(() => __acRunCmd('reg add "' + key + '" /ve /t REG_SZ /d "' + manifest + '" /f')),
+      Promise.resolve());
+    return addAll(__AC_HELPER_REG_KEYS, helperManifest)
+      .then(() => addAll(__AC_ENGINE_REG_KEYS, engineManifest))
+      .then(() => console.log('[AC-MV3-NATIVE] native hosts registered for',
+        __AC_HELPER_REG_KEYS.length, 'browser branches (engine + helper)'));
+  }
+
+  /** Warning UI: file71 popup (over pages) + chrome.notifications (optional perm). */
+  function __acNativeWarn() {
+    const title = 'AutoControl: native component problem';
+    const body = 'The updated native component could not be installed or updated automatically, so many areas will not function properly when you hover over them. Select "Uninstall native component" in the settings, reinstall it, and then restart the extension.';
+    console.warn('[AC-MV3-NATIVE] ' + title + ' — ' + body);
+    try {
+      if (typeof _Fo === 'function') {
+        _Fo({ width: 560 },
+          '<b>' + title + '</b> <hr b=2> ' + body +
+          ' <hr b=3> <center><button yes>Open settings</button> <button>Close</button></center>',
+          ans => { if (ans && ans.answer) { try { chrome.runtime.openOptionsPage(); } catch (e) {} } });
+      }
+    } catch (e) { console.warn('[AC-MV3-NATIVE] warning popup failed:', e.message); }
+    try {
+      if (chrome.notifications && chrome.notifications.create) {
+        chrome.notifications.create('acNativeWarn_' + Date.now(), {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('AutoCtrl/logo32.png'),
+          title: title,
+          message: body
+        }, () => { try { void chrome.runtime.lastError; } catch (e) {} });
+      }
+    } catch (e) { /* notifications permission not granted — the popup above is enough */ }
+  }
+
+  /** Wait until the zone helper answers; warns (and reloads once) when it never does. */
+  function __acHelperVerify() {
+    let tries = 0;
+    const attempt = () => __acZoneAsk(1500).then(zs => {
+      const ok = Array.isArray(zs) && zs.length && zs[0] >= 0;
+      if (ok) { console.log('[AC-MV3-NATIVE] zone helper connected:', JSON.stringify(zs)); return true; }
+      if (++tries >= 3) {
+        console.warn('[AC-MV3-NATIVE] zone helper NOT responding:', JSON.stringify(zs));
+        return __acStorageGet('__acHelperReloaded').then(done => {
+          if (done) { __acNativeWarn(); return false; }
+          __acReloadScheduled = true;
+          __acStorageSet({ __acHelperReloaded: 1 });
+          console.warn('[AC-MV3-NATIVE] helper host lookup may be cached as missing — reloading the extension once');
+          setTimeout(() => { try { chrome.runtime.reload(); } catch (e) {} }, 1500);
+          return false;
+        });
+      }
+      return __acSleep(1200).then(attempt);
+    });
+    return attempt();
+  }
+
+  /**
+   * Full native uninstall (settings → Uninstall native component). The
+   * extension performs the WHOLE cleanup itself as ONE cmd chain (type 260) —
+   * the original installer removes only the Chrome engine key and cannot
+   * delete a directory locked by another browser's helper/engine ("Could not
+   * delete the installation directory. Remove the extension from all your
+   * browser profiles...", user report 2026-10-10). Chain order matters:
+   *   1. delete all 16 host keys (8 branches x engine+helper) — the browsers
+   *      can no longer respawn anything;
+   *   2. kill every helper / engine / Zero (our own too; the cmd survives its
+   *      parent's death — proven by the original uninstaller, which killed the
+   *      engine and continued to its delete step);
+   *   3. wait for the handles to be released, delete the helper files, the
+   *      temp installer copy and the whole component directory (the `cd /d`
+   *      is required: cmd's CWD is the directory being deleted);
+   *   4. retry the `rd` once for slow handle release.
+   * A reinstall is detected by the next successful connect (__acUninstallDone)
+   * which clears the quiet window and forces the bundle sync.
+   */
+  function __acUninstallNative() {
+    __acZoneReleasedUntil = Date.now() + 120000;
+    console.log('[AC-MV3-NATIVE] uninstall: starting the full native cleanup');
+    if (__acZonePort) { try { __acZonePort.disconnect(); } catch (e) {} __acZonePort = null; }
+    __acStorageSet({ __acHelperReg: 0, __acUninstalling: 1 });
+    const parts = [];
+    __AC_HELPER_REG_KEYS.forEach(k => parts.push('reg delete "' + k + '" /f'));
+    __AC_ENGINE_REG_KEYS.forEach(k => parts.push('reg delete "' + k + '" /f'));
+    parts.push('taskkill /F /IM ' + __AC_HELPER_EXE);
+    parts.push('taskkill /F /IM ' + __AC_ENGINE_EXE);
+    parts.push('taskkill /F /IM AutoControlZero.exe');
+    parts.push('ping -n 4 127.0.0.1 >nul');
+    parts.push('del /F /Q ' + __AC_HELPER_EXE + ' ' + __AC_HELPER_MANIFEST);
+    parts.push('del /F /Q "%TEMP%\\Native-Component.exe"');
+    parts.push('cd /d "%LOCALAPPDATA%"');
+    parts.push('rd /s /q "AutoControl"');
+    parts.push('ping -n 2 127.0.0.1 >nul');
+    parts.push('rd /s /q "AutoControl"');
+    return __acRunCmd(parts.join(' & '))
+      .then(ok => {
+        console.log('[AC-MV3-NATIVE] uninstall: cleanup chain dispatched', ok ? 'OK' : 'FAILED');
+        return ok;
+      });
+  }
+
+  /** Deploy/refresh the zone helper + its host registration. */
+  function __acSyncHelper() {
+    if (Date.now() < __acZoneReleasedUntil) {
+      console.log('[AC-MV3-NATIVE] helper sync skipped (released for uninstall)');
+      return Promise.resolve();
+    }
+    return __acBundlePayload(__AC_HELPER_DAT).then(bundled => {
+      if (!bundled) { console.warn('[AC-MV3-NATIVE] bundled helper payload missing'); return; }
+      return __acNativeRead(__AC_HELPER_EXE).then(deployed => {
+        if (deployed === undefined) { console.warn('[AC-MV3-NATIVE] helper read failed — skipped'); return; }
+        const manifest = __acHelperManifestText();
+        const writeAll = () => {
+          // the running helper locks its exe: disconnect first (Chrome kills it)
+          if (__acZonePort) { try { __acZonePort.disconnect(); } catch (e) {} __acZonePort = null; }
+          return __acSleep(400)
+            .then(() => __acNativeWrite(__AC_HELPER_EXE, bundled))
+            .then(ok => {
+              console.log('[AC-MV3-NATIVE] helper write:', ok ? 'OK' : 'FAILED');
+              if (!ok) return false;
+              return __acNativeWrite(__AC_HELPER_MANIFEST, manifest);
+            })
+            .then(ok => {
+              if (ok === false) { __acNativeWarn(); return false; }
+              return __acRegisterHelperHost().then(() => {
+                __acStorageSet({ __acHelperReg: __AC_HOST_REG_VERSION, __acHelperReloaded: 0 });
+                return true;
+              });
+            });
+        };
+        if (deployed !== bundled) {
+          console.warn('[AC-MV3-NATIVE] helper ' + (deployed ? 'MISMATCH' : 'MISSING') + ' — deploying the bundled build');
+          return writeAll().then(ok => ok === false ? false : __acHelperVerify());
+        }
+        // file is current: make sure the manifest matches (extension ID!) and the
+        // host is registered at least once
+        return __acNativeRead(__AC_HELPER_MANIFEST).then(mf => {
+          let p = Promise.resolve();
+          if (mf !== manifest) {
+            console.log('[AC-MV3-NATIVE] helper manifest missing/outdated — writing');
+            p = p.then(() => __acNativeWrite(__AC_HELPER_MANIFEST, manifest));
+          }
+          return p.then(() => __acStorageGet('__acHelperReg')).then(reg => {
+            if (reg !== __AC_HOST_REG_VERSION) {
+              return __acRegisterHelperHost().then(() => __acStorageSet({ __acHelperReg: __AC_HOST_REG_VERSION }));
+            }
+          }).then(() => __acHelperVerify());
+        });
+      });
+    });
+  }
+
+  /** Deploy/refresh the patched engine (taskkill + write + clean reconnect). */
+  function __acSyncEngine() {
+    return __acBundlePayload('file76.dat').then(bundled => {
+      if (!bundled) { console.warn('[AC-MV3-NATIVE] bundled engine payload missing'); return; }
+      return __acNativeRead(__AC_ENGINE_EXE).then(deployed => {
+        if (deployed === undefined) { console.warn('[AC-MV3-NATIVE] engine read failed — skipped'); return; }
+        if (deployed === bundled) { console.log('[AC-MV3-NATIVE] engine OK: deployed == bundled patched build'); return; }
+        console.warn('[AC-MV3-NATIVE] engine ' + (deployed ? 'MISMATCH' : 'MISSING') + ' — deploying the bundled patched build');
+        const stop = deployed
+          ? __acRunCmd('taskkill /F /IM ' + __AC_ENGINE_EXE).then(() => __acSleep(700))
+          : Promise.resolve();
+        return stop.then(() => __acNativeWrite(__AC_ENGINE_EXE, bundled)).then(ok => {
+          console.log('[AC-MV3-NATIVE] engine write:', ok ? 'OK' : 'FAILED');
+          if (!ok) { __acNativeWarn(); return; }
+          // the old engine (if any) is gone and the file changed: reconnect so a
+          // fresh Zero spawns the new engine (same final step as unpackBundledEngine)
+          console.warn('[AC-MV3-NATIVE] engine replaced — clean reconnect');
+          handshakeDone = false;
+          startupSent = false;
+          type72Sent = false;
+          if (port) { try { port.disconnect(); } catch (e) {} port = null; }
+          connected = false;
+          scheduleRetry();
+        });
+      });
+    });
+  }
+
+  /**
+   * Entry point — call after a successful handshake. The HELPER is checked on
+   * EVERY call (22 KB read, cheap — a missing helper must self-heal after an
+   * uninstall/reinstall without waiting for the throttle or a reload); only the
+   * ENGINE check (700 KB read) is throttled and force-able.
+   */
+  function __acEnsureNativeBundle(force) {
+    if (__acNativeCheckRunning) return Promise.resolve(false);
+    if (!connected || !portConnectedOk) return Promise.resolve(false);
+    __acNativeCheckRunning = true;
+    return __acStorageGet('__acNativeCheckAt').then(last => {
+      const skipEngine = !force && !__acNativeCheckForce && last && (Date.now() - last < __AC_NATIVE_CHECK_TTL);
+      __acNativeCheckForce = false;
+      console.log('[AC-MV3-NATIVE] checking deployed engine + zone helper...' + (skipEngine ? ' (engine check throttled)' : ''));
+      return __acSyncHelper()
+        .then(() => skipEngine ? null : __acSyncEngine())
+        .catch(e => console.warn('[AC-MV3-NATIVE] sync error:', e && e.message))
+        .then(() => {
+          // a scheduled reload re-checks with a fresh host lookup, so keep the
+          // throttle stamp unset in that case
+          if (!__acReloadScheduled) __acStorageSet({ __acNativeCheckAt: Date.now() });
+          __acNativeCheckRunning = false;
+          return true;
+        });
+    });
+  }
+
+  // TEST HOOK (2026-09-20): the SW internals are IIFE-local, so the zone gate
+  // and the hovered-tab refresh cannot be driven from the console — and the
+  // engine DROPS synthetic input, so a real 750 needs a physical wheel.
+  // These let the CDP scripts exercise the exact production path:
+  //   __acTest.dispatch750(_Sk + trigId)   - full gate + cache refresh + run
+  //   __acTest.setHoveredTab()             - just the hovered-tab refresh
+  //   __acTest.zoneAsk(t) / tabAsk(t)      - raw helper requests
+  try {
+    window.__acTest = {
+      dispatch750: (id) => __acDispatchTrigger750({ id: id }, Date.now()),
+      setHoveredTab: () => __acSetHoveredTab(),
+      zoneAsk: (t) => __acZoneAsk(t),
+      tabAsk: (t) => __acZoneTabAsk(t),
+      // The tab the helper reported at the last refresh (SW-local: _kg is
+      // wiped by the bundle's own _wd() during an action, this one is not).
+      hoveredId: () => __acHoveredTabId,
+      // Native bundle sync (2026-10-10) — live checks/deploys via CDP:
+      nativeCheck: (force) => __acEnsureNativeBundle(force),
+      nativeRead: (name) => __acNativeRead(name),
+      nativeWrite: (name, data) => __acNativeWrite(name, data),
+      helperRegister: () => __acRegisterHelperHost(),
+      nativeWarn: () => __acNativeWarn()
+    };
+  } catch (e) {}
+
+  // Self-waker: calling an extension API every 20s resets the SW idle timer
+  // (Chrome 110+: "calling an extension API resets this timer"). Together with
+  // the permanent native messaging port (Chrome 105+: connectNative keeps the
+  // SW alive) this keeps the SW alive indefinitely — critical in SW-brain mode.
+  setInterval(() => { chrome.runtime.getPlatformInfo().catch(() => {}); }, 20000);
+
+  console.log("[AC-MV3] SW started (SW-brain), connecting to native host...");
+  setTimeout(() => {
+    console.log("[AC-MV3] Connection status:", {
+      connected, port: !!port, portOk: portConnectedOk,
+      core: typeof _6y === 'function' && typeof _Gf === 'function' ? 'LOADED' : 'MISSING',
+      native: typeof _acNativeSend === 'function' ? 'hooked' : 'NOT hooked'
+    });
+  }, 3000);
+
+
   function __acSeedDefaultSettings(done) {
     const finish = () => { try { done(); } catch (e) {} };
     try {

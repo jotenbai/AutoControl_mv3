@@ -44,9 +44,9 @@ Then open the extension → **Install** the native component → run the install
 - **Allow access to file URLs** — only for local `file://` paths
 - **Allow in Incognito** — only if you want it in incognito windows
 
-Usage data and logs are **off** by default. Turn them on in **Extension options → Advanced Options** (`Send anonymous usage data`, `Log service worker`) if you need them.
+Logs are **off** by default. Turn them on in **Extension options → Advanced Options** (`Log service worker`, etc.) if you need them. Usage telemetry was removed (the old analytics host is gone).
 
-After in-app Install you can delete `reference/AutoControl_native/*.exe` from a git checkout. The extension deploys from `extension/file69.dat` and `file76.dat`.
+After in-app Install you can delete `reference/AutoControl_native/original/*.exe` from a git checkout. The extension deploys from `extension/file69.dat` and `file76.dat`.
 
 Developers packaging a store ZIP: `.\package.ps1` (strips the original `key`, includes `_locales`). Not an end-user install step.
 
@@ -86,9 +86,9 @@ Hotkeys, gestures, SendInput, and most file I/O need the Windows host `hrich.aut
 - Installed under `%UserProfile%\AppData\Local\AutoControl\`
 - Registry: `HKCU\SOFTWARE\Google\Chrome\NativeMessagingHosts\hrich.autocontrol`
 
-If the pane never finishes: reload the extension; confirm both exes and `AutoControl.manifest` are in that folder; as a last resort copy `reference/AutoControl_native\AutoCtrl_2025.4.22.0.exe` there and reload. Do **not** `taskkill /F` the engine to “fix” it — that can leave keyboard/mouse hooks stuck for ~40 seconds. Use **Emergency repair** on the toolbar context menu instead. The badge goes **Wait → OK** or **Error**. If a popup lists stuck keys, those were held at repair time.
+If the pane never finishes: reload the extension; confirm both exes and `AutoControl.manifest` are in that folder; as a last resort copy `reference/AutoControl_native\original\AutoCtrl_2025.4.22.0.exe` there and reload. Do **not** `taskkill /F` the engine to “fix” it — that can leave keyboard/mouse hooks stuck for ~40 seconds. Use **Emergency repair** on the toolbar context menu instead. The badge goes **Wait → OK** or **Error**. If a popup lists stuck keys, those were held at repair time.
 
-`reference/AutoControl_native/` in the repo is the decrypted originals for antivirus review and manual copy. MD5 (decrypted): Zero `FF33A86EC873836A51CEC8F77B8C0B49`, engine `D9BE9A1099D70FAFCEB59EF22DA5B44A`.
+`reference/AutoControl_native/original/` holds the decrypted stock hosts for antivirus review and manual copy. MD5: Zero `FF33A86EC873836A51CEC8F77B8C0B49`, engine `D9BE9A1099D70FAFCEB59EF22DA5B44A`. The Load-unpacked build ships the **patched engine v19** (`file76.dat`) plus `ac_zone_helper.dat` so Chrome 148+ mouse-over zones work after the SW syncs them into `%LocalAppData%\AutoControl\`.
 
 ### What’s in this repo
 
@@ -153,9 +153,9 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 - **允许访问文件网址** — 只用到本地 `file://` 时才开
 - **在隐身模式下启用** — 只在隐身窗口也要用时才开
 
-用量统计和日志**默认关闭**。需要时在 **扩展程序选项 → Advanced Options** 打开 `Send anonymous usage data`、`Log service worker`。
+日志**默认关闭**。需要时在 **扩展程序选项 → Advanced Options** 打开 `Log service worker` 等。用量统计已移除（原分析域名已不属原作者）。
 
-应用内 Install 成功后，git 检出里的 `reference/AutoControl_native/*.exe` 可以删。扩展从 `extension/file69.dat` 和 `file76.dat` 部署。
+应用内 Install 成功后，git 检出里的 `reference/AutoControl_native/original/*.exe` 可以删。扩展从 `extension/file69.dat` 和 `file76.dat` 部署。
 
 开发者打商店 ZIP：`.\package.ps1`（会去掉原版 `key`，打进 `_locales`）。不是给普通用户的安装步骤。
 
@@ -195,9 +195,9 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 - 安装位置：`%UserProfile%\AppData\Local\AutoControl\`
 - 注册表：`HKCU\SOFTWARE\Google\Chrome\NativeMessagingHosts\hrich.autocontrol`
 
-安装页一直完不成：先重载扩展；确认该目录里两个 exe 和 `AutoControl.manifest` 都在；实在不行把 `reference/AutoControl_native\AutoCtrl_2025.4.22.0.exe` 拷进去再重载。不要用 `taskkill /F` 杀引擎「修复」——全局钩子可能卡住键盘鼠标大约 40 秒。请用工具栏右键里的 **Emergency repair**。图标徽章会 **Wait → OK** 或 **Error**。若弹出卡住的键，那是修理当时按着的键。
+安装页一直完不成：先重载扩展；确认该目录里两个 exe 和 `AutoControl.manifest` 都在；实在不行把 `reference/AutoControl_native\original\AutoCtrl_2025.4.22.0.exe` 拷进去再重载。不要用 `taskkill /F` 杀引擎「修复」——全局钩子可能卡住键盘鼠标大约 40 秒。请用工具栏右键里的 **Emergency repair**。图标徽章会 **Wait → OK** 或 **Error**。若弹出卡住的键，那是修理当时按着的键。
 
-仓库里的 `reference/AutoControl_native/` 是解密后的原版文件，供杀毒对照和手动拷贝。解密 MD5：Zero `FF33A86EC873836A51CEC8F77B8C0B49`，引擎 `D9BE9A1099D70FAFCEB59EF22DA5B44A`。
+仓库里的 `reference/AutoControl_native/original/` 是解密后的原版宿主，供杀毒对照和手动拷贝。MD5：Zero `FF33A86EC873836A51CEC8F77B8C0B49`，引擎 `D9BE9A1099D70FAFCEB59EF22DA5B44A`。Load unpacked 包内是**补丁引擎 v19**（`file76.dat`）和 `ac_zone_helper.dat`；SW 会同步到 `%LocalAppData%\AutoControl\`，Chrome 148+ 悬停区域可用。
 
 ### 仓库里有什么
 

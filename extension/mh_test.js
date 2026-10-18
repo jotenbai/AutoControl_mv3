@@ -454,8 +454,9 @@ setTimeout(() => {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     check('zero-proxy host manifest', manifest.name === 'hrich.autocontrol' && manifest.path === 'AutoControlZero.exe',
       'path=' + manifest.path);
-    const zeroOk = fs.existsSync(path.join(__dirname, '..', 'reference', 'AutoControl_native', 'AutoControlZero.exe'));
-    const fullOk = fs.existsSync(path.join(__dirname, '..', 'reference', 'AutoControl_native', 'AutoCtrl_2025.4.22.0.exe'));
+    const nativeDir = path.join(__dirname, '..', 'reference', 'AutoControl_native', 'original');
+    const zeroOk = fs.existsSync(path.join(nativeDir, 'AutoControlZero.exe'));
+    const fullOk = fs.existsSync(path.join(nativeDir, 'AutoCtrl_2025.4.22.0.exe'));
     check('zero-proxy: both exes present in install folder', zeroOk && fullOk,
       'Zero=' + zeroOk + ' full=' + fullOk);
   } catch(e) {
@@ -1317,31 +1318,20 @@ setTimeout(() => {
     ok, 'favWarm=' + ok);
 }
 
-// B31. Telemetry gate (2026-08-08, privacy — user request): appEvent POSTs
-// (`_Ot` in file13.js, IN bundle) are OFF by default; enabled ONLY via the
-// Advanced Options checkbox "Send anonymous usage data" (advOpts.telemetry),
-// live via storage.onChanged. The callback is preserved when disabled (some
-// call sites wait for it). file13.js covers BOTH the SW (via the bundle) and
-// the settings page (main.html loads it directly). file30.js `_Ls` renders
-// the checkbox + a consent paragraph.
+// B31. Telemetry REMOVED (2026-10-11 upstream / ported 2026-10-18): the
+// analytics host is dead/resold. `_Ot` is a callback-only stub; no payload,
+// no POST, no advOpts.telemetry UI. Call sites that wait on the callback
+// still complete.
 {
   const f13 = fs.readFileSync(path.join(MV3, 'file13.js'), 'utf8');
   const f30 = fs.readFileSync(path.join(MV3, 'file30.js'), 'utf8');
   const bndl = fs.readFileSync(path.join(MV3, 'sw_core_bundle.js'), 'utf8');
-  const ok = f13.includes('let __acTel=!1') &&
-    f13.includes('!__acTel)return c&&c()') &&
-    f13.includes('advOpts.telemetry') &&
-    f13.includes('__acTel=!!((a.advOpts.newValue||{}).telemetry)') &&
-    f13.includes('[AC-TEL]') &&
-    f13.includes('(__acTel?"send":"skipped")') &&
-    f30.includes('_re("telemetry",a.telemetry,"hard")') &&
-    f30.includes('Send anonymous usage data') &&
-    f30.includes('Disabled by default') &&
-    bndl.includes('let __acTel=!1') &&
-    bndl.includes('!__acTel)return c&&c()') &&
-    bndl.includes('[AC-TEL]');
-  check('telemetry gate: _Ot off by default + advOpts.telemetry checkbox with consent (2026-08-08)',
-    ok, 'telGate=' + ok);
+  const stub = /function _Ot\(a,b=\{\},c\)\{c&&c\(\)\}/.test(f13) &&
+    /function _Ot\(a,b=\{\},c\)\{c&&c\(\)\}/.test(bndl);
+  const noSend = !f13.includes('appEvent') && !f13.includes('__acTel') &&
+    !bndl.includes('__acTel') && !f30.includes('Send anonymous usage data');
+  check('telemetry removed: _Ot is callback-only stub; no UI / no appEvent (2026-10-18)',
+    stub && noSend, 'stub=' + stub + ' noSend=' + noSend);
 }
 
 // B33. Type-40 capture watchdog (2026-08-09, staged + definitive recording
@@ -2395,6 +2385,37 @@ vm.runInContext(`
   const rt = !re.test('1.1') && !re.test('1.2') && re.test('2021.4.5');
   check('onInstalled: Zero self-update _F gated to year-style prev versions (1.x reload no longer rewrites Zero)',
     srcOk && bundleOk && noBare && rt, 'src=' + srcOk + ' bundle=' + bundleOk + ' noBare=' + noBare + ' rt=' + rt);
+}
+
+// B62. Upstream zone helper + patched engine v19 + copy-URLs + sync (2026-10-18)
+{
+  const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  const f95 = fs.readFileSync(path.join(MV3, 'file95.js'), 'utf8');
+  const helperDat = path.join(MV3, 'ac_zone_helper.dat');
+  const engDat = path.join(MV3, 'file76.dat');
+  const crypto = require('crypto');
+  const engMd5 = fs.existsSync(engDat)
+    ? crypto.createHash('md5').update(fs.readFileSync(engDat)).digest('hex').toUpperCase()
+    : '';
+  const zoneOk = sw.includes('ZONE_HOST') &&
+    sw.includes("com.autocontrol.zonehelper") &&
+    sw.includes('__acZoneAsk') &&
+    sw.includes('__acDispatchTrigger750') &&
+    sw.includes('__acEnsureNativeBundle') &&
+    sw.includes('__acSyncHelper') &&
+    sw.includes('__acSyncEngine') &&
+    sw.includes('case "acUninstallNative"') &&
+    fs.existsSync(helperDat) &&
+    engMd5 === '2F878E9EB062C57D8B5C7FFBC91EAB5D';
+  const copyOk = f95.includes('function _hB(') &&
+    f95.includes('_hB(_4o(e.content).fragment,a)') &&
+    f95.includes('windows.get(g'); // fork B58 fullscreen toggle kept
+  const forkOk = sw.includes('lOfficial') &&
+    sw.includes('patchNativeOrigin') &&
+    sw.includes('__acSeedDefaultSettings');
+  check('zone helper + v19 engine + copy-URLs ported; fork Allow-bat/seed/lOfficial kept (2026-10-18)',
+    zoneOk && copyOk && forkOk,
+    'zone=' + zoneOk + ' copy=' + copyOk + ' fork=' + forkOk + ' engMd5=' + engMd5);
 }
 
 // ---------- summary ----------

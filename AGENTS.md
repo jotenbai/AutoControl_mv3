@@ -3,7 +3,7 @@
 > **What this file is**: rules + current gotchas for working on the MV3 port.
 > It is a working reference for agents/contributors.
 >
-> - Upstream snapshot (do **not** edit) → `reference/` (`Docs/`, `ext-mv2/`, …)
+> - Upstream snapshot (keep in sync with `upstream/master`) → `reference/`
 > - Upstream changelog → https://github.com/Alex-302/AutoControl_mv3/blob/master/CHANGELOG.md
 >   (this fork does not keep a local CHANGELOG; later history is `git log`)
 > - This fork’s gotchas / open items → this file (`AGENTS.md`)
@@ -24,15 +24,18 @@ This includes comments, log strings, and error messages in `sw.js`,
 - **`webstore/`** = store listing copy that is **not** zipped: `privacy.md`,
   `description.txt`, `permissions.txt`, `screenshots/` (flat files such as
   `global1.jpg`; no language subfolders).
-- **`reference/`** = **unmodified snapshots of `upstream/master`**. Do **not**
-  edit these trees; refresh by checking out Alex’s folders again.
-  - **`reference/README.md`** = links to Alex’s live docs mirror and
-    upstream changelog.
+- **`reference/`** = snapshots of `upstream/master` — **keep identical** to
+  Alex’s trees (`Docs/`, `ext-mv2/`, `AutoControl_native/`,
+  `Toolbar-buttons/`). Refresh by replacing those four folders from
+  upstream; do not edit them locally for fork-specific notes (those go in
+  this file / `README.md`).
+  - **`reference/README.md`** = links + snapshot tip.
   - **`reference/ext-mv2/`** = original MV2 extension.
   - **`reference/Docs/`** = Alex’s port notes + `autocontrol.app-site/`.
-  - **`reference/AutoControl_native/`** = decrypted native host (repo copy;
-    the store ID is **not** patched here. A CWS ID that is “forbidden”
-    gets `Allow-AutoControl_mv3-native.bat` from the service worker.
+  - **`reference/AutoControl_native/`** = `original/` Zero+engine,
+    `patched/` engine v19, `ac_zone_helper.exe`, `patches/`. Store ID is
+    **not** patched here; CWS “forbidden” → Allow-bat from the SW.
+    Snapshot tip `350ed76` (2026-10-18).
   - **`reference/Toolbar-buttons/`** = auxiliary MV2/MV3 button builds.
 - **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
   `package.ps1` (zips `extension/` only;
@@ -240,13 +243,10 @@ This includes comments, log strings, and error messages in `sw.js`,
   (`isLeader()` gate in `mv3_native_shim.js`).
 - Page-side shims: `mv3_shim.js` (chrome.tabs shims, SW registration),
   `mv3_native_shim.js` (native stubs delegating to SW; `_Lk`/`_Vy` → SW).
-- **Telemetry is OFF by default (2026-08-08, user request)**: the analytics is
-  OLD MV2 behavior (`_Ot` ALWAYS POSTed to appEvent; could not be disabled in
-  MV2). We added ONLY the off-switch: `_Ot` is gated by `__acTel` (default
-  false — NOTHING is sent until enabled), the flag comes from
-  `advOpts.telemetry` (live via `storage.onChanged`); the callback is
-  preserved when disabled (some call sites wait for it). UI: Advanced Options
-  → «Send anonymous usage data».
+- **Telemetry REMOVED (2026-10-11 upstream / ported 2026-10-18)**: `_Ot` is a
+  callback-only stub (`c&&c()`); no appEvent POST, no `__acTel`, no Advanced
+  Options checkbox. The old `www.autocontrol.app` analytics host is dead /
+  resold. mh_test B31.
 - **Logging is OFF by default (MV2-like silence)** — publishing default.
   Options → Advanced Options → `logSw`/`logPage`/`logSettings` (applied LIVE
   via `storage.onChanged`; `console.error` always kept). Startup output is
@@ -408,10 +408,11 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   2001 → every 1.x → 1.y update triggered it. FIX: call `_F` only when
   `previousVersion` matches `/^\d{4}\./` (year-style MV2 versions). mh_test
   B61. Bundle rebuilt. Repair: copy
-  `reference/AutoControl_native/AutoControlZero.exe` (MD5 `FF33A86E…`) into
-  `%LocalAppData%\AutoControl\`, or rerun Native-Component. ⚠
-  `file69.dat` is the ENCRYPTED distro form (differs from byte 0) — never
-  copy it as the exe; only the native write path decrypts it.
+  `reference/AutoControl_native/original/AutoControlZero.exe` (MD5
+  `FF33A86E…`) into `%LocalAppData%\AutoControl\`, or rerun
+  Native-Component. ⚠ `file69.dat` is the ENCRYPTED distro form (differs
+  from byte 0) — never copy it as the exe; only the native write path
+  decrypts it.
 - **Install pane must NOT auto-close (FIXED 2026-08-07)** — the ping-loop
   starts ONLY after the user clicks Install; for the leftover-native case the
   shim dispatches `ac-install-done` when the SW reports connected AND
@@ -689,15 +690,17 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   `configLoaded` + `storage.onChanged(mouseGest)`, `cmd:gestureDisplay`;
   page `_6t` routed via `mv3_shim.js`; CSS `@font-face gestureDirs`.
   Do NOT revert to `!b.enabled`.
-- **Hover regions broken in Chrome 148+** (ALL regions, verified 2026-08-30
-  on Chrome 150: "Web page" and "Title area" included — the native a11y
-  hit-test regression ignores `{type:14}` mouseOver preconds entirely;
-  affects MV2 AND MV3, NOT a port loss, NO extension-side fix exists — no
-  cursor-position API). Previously only the top-row regions ("Browser tab",
-  "close button", "speaker icon", "new tab", "menu item") were known
-  broken; testing shows the gate never fires regardless of region. Do NOT
-  use hover conditions in test triggers on Chrome 148+; the UI still offers
-  them (they worked pre-148).
+- **Hover regions on Chrome 148+ — RESTORED (upstream 2026-09 / ported
+  2026-10-18)**: stock engine hover cache never refreshes over the tab strip
+  and MSAA from the LL-hook deadlocks. FIX: patched engine **v19** in
+  `file76.dat` (MD5 `2F878E9E…`) + second native host `com.autocontrol.zonehelper`
+  (`ac_zone_helper.dat` → `%LocalAppData%\AutoControl\ac_zone_helper.exe`).
+  SW `__acEnsureNativeBundle` keeps both in sync after handshake (may
+  `taskkill` the running engine once on mismatch — short LL-hook risk).
+  Zone gate: `__acDispatchTrigger750` + `__acZoneAsk` (120 ms burst cache).
+  UI labels no longer say “broken in Chrome 148+”. Menu-item regions 40–51
+  still engine-classified. mh_test B62. Fork Allow-bat / `lOfficial` /
+  defaults seed kept.
 - **This fork's empty-config gesture default is middle button / 4 dirs**
   (2026-09-16, B56) — MV2 `_0p` used `preset||"rightButton"` and the
   Options UI used `dirPrecision||8`. Fresh storage (`mouseGest:{}`) now
@@ -1082,16 +1085,17 @@ otherwise the next session starts from zero. Concretely:
 
 1. **New findings go into `AGENTS.md` immediately** — do not postpone "until it
    stabilizes", and do **not** edit `reference/Docs/` (that tree is an
-   unmodified `upstream/master` snapshot). Protocol facts, decoded symbols,
+   upstream snapshot — keep in sync, do not fork-edit). Protocol facts, decoded symbols,
    and this fork’s feature gaps all land in this file. Alex’s tables remain
    readable at `reference/Docs/FEATURES-MV3.md` / `NATIVE_PROTOCOL.md` /
    `DECODE.md`.
 1b. **Keep `README.md` (the install guide) current** — bilingual EN then
    简体中文, usage-first: Load unpacked → `extension/` (keep that folder),
-   in-app native Install (`reference/AutoControl_native\` exes are optional after
-   that), Restore from `.acs` is **Replace not Add**, chrome:// Open URL
-   works. Toggles: "Allow user scripts" / "Allow access to file URLs".
-   Manual fallback: `reference/AutoControl_native\` →
+   in-app native Install (`reference/AutoControl_native\original\` exes are
+   optional after that), Restore from `.acs` is **Replace not Add**,
+   chrome:// Open URL works. Toggles: "Allow user scripts" / "Allow access
+   to file URLs". Manual fallback:
+   `reference/AutoControl_native\original\` →
    `%UserProfile%\AppData\Local\AutoControl`. Do not present `package.ps1`
    as an end-user install step.
 2. **Every fix ships with a doc line** — at minimum a bullet in the relevant
