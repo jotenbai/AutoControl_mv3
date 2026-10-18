@@ -2288,7 +2288,7 @@ vm.runInContext(`
   const ok = mf.default_locale === 'en' &&
     mf.name === '__MSG_extName__' &&
     mf.description === '__MSG_extDescription__' &&
-    mf.version === '1.2' &&
+    mf.version === '1.3' &&
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&

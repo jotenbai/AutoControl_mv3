@@ -397,6 +397,16 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
   the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
   README steers end users to Load unpacked from GitHub.
+  3. **Zero embedded origins (plan B, 2026-10-18)**: `AutoControlZero.exe`
+     hardcodes the same 14 IDs. Manifest-only Allow-bat lets `connectNative`
+     through, but a non-listed ID still trips native invalid-ID behaviour
+     (window minimize storms). Fix on a machine: swap one unused 32-char
+     companion slot for the CWS ID (`ifjogpfn…`), then sync
+     `AutoControl.manifest`. Script: `tools/patch-zero-store-id.ps1`
+     (backs up under `%LocalAppData%\AutoControl\_backup_before_store_id_patch\`).
+     **Native-Component Reinstall overwrites Zero — re-run the script.**
+     Shipping a patched Zero inside the store ZIP is a separate follow-up
+     (would need a patched `file69.dat` encrypt path).
 - **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
   after reloading unpacked 1.1 → 1.2, Chrome could not start the host and
   Windows showed "This app can't run on your PC"; the installed Zero was
@@ -720,6 +730,10 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
 
 ### UI / settings
 
+- **«Support the Project» sidebar button hidden (2026-10-18)** — original
+  donate/PayPal prompt for the AutoControl authors (`contribBtn` in file2
+  `n()`). Removed the create + animate loop (same as upstream); `contribPanel`
+  template in `main.html` is unused. Reload the settings tab to see it gone.
 - **Toolbar icon click** — the bundle file62_mv3.js is the SINGLE
   `onClicked` handler (trigger if `brwrAction.trigActId` is assigned —
   legacy storage key, no UI writes it — else settings page). sw.js must NOT
