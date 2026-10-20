@@ -4,7 +4,7 @@ The four folders below are **unmodified copies** of [Alex-302/AutoControl_mv3](h
 
 This fork’s notes live in `../AGENTS.md`. History is `git log`.
 
-**Snapshot tip:** `350ed76` (2026-10-18 refresh — PR #13/#16/#17/#18/#19: mouse-over zones + zone helper, copy-selected-URLs, self-installing native, telemetry removed, gesture HUD).
+**Snapshot tip:** `8d0ca6e` (2026-10-21 refresh — prior zone/helper work + `fix(helper): make the zone helper's diagnostic log opt-in`).
 
 ## Original AutoControl docs (live site)
 

@@ -35,7 +35,7 @@ This includes comments, log strings, and error messages in `sw.js`,
   - **`reference/AutoControl_native/`** = `original/` Zero+engine,
     `patched/` engine v19, `ac_zone_helper.exe`, `patches/`. Store ID is
     **not** patched here; CWS “forbidden” → Allow-bat from the SW.
-    Snapshot tip `350ed76` (2026-10-18).
+    Snapshot tip `8d0ca6e` (2026-10-21).
   - **`reference/Toolbar-buttons/`** = auxiliary MV2/MV3 button builds.
 - **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
   `package.ps1` (zips `extension/` only;
@@ -397,16 +397,15 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
   the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
   README steers end users to Load unpacked from GitHub.
-  3. **Zero embedded origins (plan B, 2026-10-18)**: `AutoControlZero.exe`
-     hardcodes the same 14 IDs. Manifest-only Allow-bat lets `connectNative`
-     through, but a non-listed ID still trips native invalid-ID behaviour
-     (window minimize storms). Fix on a machine: swap one unused 32-char
-     companion slot for the CWS ID (`ifjogpfn…`), then sync
-     `AutoControl.manifest`. Script: `tools/patch-zero-store-id.ps1`
-     (backs up under `%LocalAppData%\AutoControl\_backup_before_store_id_patch\`).
-     **Native-Component Reinstall overwrites Zero — re-run the script.**
-     Shipping a patched Zero inside the store ZIP is a separate follow-up
-     (would need a patched `file69.dat` encrypt path).
+  3. **Zero embedded origins — plan B DISPROVED (2026-10-20/21)**:
+     `AutoControlZero.exe` hardcodes the same 14 IDs. Manifest Allow-bat
+     alone is not enough; swapping a companion slot for the CWS ID
+     (`ifjogpfn…`) lets the store build connect but **still** causes
+     Install loops and/or window-minimize storms (reproduced on a clean
+     company PC with no Load-unpacked history). The
+     `tools/patch-zero-store-id.ps1` experiment was **removed** in v1.4 —
+     do not revive it as a user-facing fix. Store-viable native support
+     needs real RE of the ID gate (or a rewritten host), not a slot swap.
 - **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
   after reloading unpacked 1.1 → 1.2, Chrome could not start the host and
   Windows showed "This app can't run on your PC"; the installed Zero was
