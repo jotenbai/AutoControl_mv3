@@ -35,7 +35,7 @@ This includes comments, log strings, and error messages in `sw.js`,
   - **`reference/AutoControl_native/`** = `original/` Zero+engine,
     `patched/` engine v19, `ac_zone_helper.exe`, `patches/`. Store ID is
     **not** patched here; CWS “forbidden” → Allow-bat from the SW.
-    Snapshot tip `8d0ca6e` (2026-10-21).
+    Snapshot tip `e37bed8` (2026-11-01).
   - **`reference/Toolbar-buttons/`** = auxiliary MV2/MV3 button builds.
 - **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
   `package.ps1` (zips `extension/` only;
@@ -700,15 +700,20 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   page `_6t` routed via `mv3_shim.js`; CSS `@font-face gestureDirs`.
   Do NOT revert to `!b.enabled`.
 - **Hover regions on Chrome 148+ — RESTORED (upstream 2026-09 / ported
-  2026-10-18)**: stock engine hover cache never refreshes over the tab strip
-  and MSAA from the LL-hook deadlocks. FIX: patched engine **v19** in
-  `file76.dat` (MD5 `2F878E9E…`) + second native host `com.autocontrol.zonehelper`
-  (`ac_zone_helper.dat` → `%LocalAppData%\AutoControl\ac_zone_helper.exe`).
-  SW `__acEnsureNativeBundle` keeps both in sync after handshake (may
-  `taskkill` the running engine once on mismatch — short LL-hook risk).
-  Zone gate: `__acDispatchTrigger750` + `__acZoneAsk` (120 ms burst cache).
+  2026-10-18; zone-table stale-on-move PR #22 ported 2026-11-01)**: stock
+  engine hover cache never refreshes over the tab strip and MSAA from the
+  LL-hook deadlocks. FIX: patched engine **v19** in `file76.dat` (MD5
+  `2F878E9E…`) + second native host `com.autocontrol.zonehelper`
+  (`ac_zone_helper.dat` MD5 `3014D8A7…` → `%LocalAppData%\AutoControl\
+  ac_zone_helper.exe`). SW `__acEnsureNativeBundle` keeps both in sync after
+  handshake (may `taskkill` the running engine once on mismatch — short
+  LL-hook risk). Zone gate: `__acDispatchTrigger750` + `__acZoneAsk` —
+  **15 ms start-time burst share** (`__AC_ZONE_BURST_MS`; replaces the old
+  120 ms time-only TTL that froze the answer across a cursor move) +
+  `noShare` for keepalive / health / port-open pings. Helper also
+  provisionally invalidates the engine zone table while the cursor moves.
   UI labels no longer say “broken in Chrome 148+”. Menu-item regions 40–51
-  still engine-classified. mh_test B62. Fork Allow-bat / `lOfficial` /
+  still engine-classified. mh_test B62/B63. Fork Allow-bat / `lOfficial` /
   defaults seed kept.
 - **This fork's empty-config gesture default is middle button / 4 dirs**
   (2026-09-16, B56) — MV2 `_0p` used `preset||"rightButton"` and the

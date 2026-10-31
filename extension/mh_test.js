@@ -2388,6 +2388,7 @@ vm.runInContext(`
 }
 
 // B62. Upstream zone helper + patched engine v19 + copy-URLs + sync (2026-10-18)
+// + 2026-10-25 PR #22: 15 ms start-time burst share + keepalive noShare (no 120 ms TTL)
 {
   const sw = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
   const f95 = fs.readFileSync(path.join(MV3, 'file95.js'), 'utf8');
@@ -2397,6 +2398,17 @@ vm.runInContext(`
   const engMd5 = fs.existsSync(engDat)
     ? crypto.createHash('md5').update(fs.readFileSync(engDat)).digest('hex').toUpperCase()
     : '';
+  const helperMd5 = fs.existsSync(helperDat)
+    ? crypto.createHash('md5').update(fs.readFileSync(helperDat)).digest('hex').toUpperCase()
+    : '';
+  const burstMs = sw.match(/const __AC_ZONE_BURST_MS = (\d+)/);
+  const burstOk = !!burstMs && parseInt(burstMs[1], 10) > 0 && parseInt(burstMs[1], 10) <= 50 &&
+    /function __acZoneAsk\(timeoutMs, noShare\)/.test(sw) &&
+    /if \(!noShare && __acZoneShared && \(now - __acZoneSharedAt\) <= __AC_ZONE_BURST_MS\)/.test(sw) &&
+    /if \(!noShare\) \{ gen = \+\+__acZoneSharedGen; __acZoneSharedAt = now; \}/.test(sw) &&
+    /if \(!noShare && gen === __acZoneSharedGen\) \{/.test(sw) &&
+    /if \(!connected\) return;\s*try \{ __acZoneAsk\(300, true\); \} catch \(e\) \{\}/.test(sw) &&
+    !/__AC_ZONE_CACHE_MS|__acZoneCacheZones|__acZoneCacheAt|__acZoneCachePend/.test(sw);
   const zoneOk = sw.includes('ZONE_HOST') &&
     sw.includes("com.autocontrol.zonehelper") &&
     sw.includes('__acZoneAsk') &&
@@ -2406,16 +2418,122 @@ vm.runInContext(`
     sw.includes('__acSyncEngine') &&
     sw.includes('case "acUninstallNative"') &&
     fs.existsSync(helperDat) &&
-    engMd5 === '2F878E9EB062C57D8B5C7FFBC91EAB5D';
+    helperMd5 === '3014D8A76310B94FFDAE005AF7ADFAC1' &&
+    engMd5 === '2F878E9EB062C57D8B5C7FFBC91EAB5D' &&
+    burstOk;
   const copyOk = f95.includes('function _hB(') &&
     f95.includes('_hB(_4o(e.content).fragment,a)') &&
     f95.includes('windows.get(g'); // fork B58 fullscreen toggle kept
   const forkOk = sw.includes('lOfficial') &&
     sw.includes('patchNativeOrigin') &&
     sw.includes('__acSeedDefaultSettings');
-  check('zone helper + v19 engine + copy-URLs ported; fork Allow-bat/seed/lOfficial kept (2026-10-18)',
+  check('zone helper + v19 engine + copy-URLs ported; 15ms burst share + noShare; fork Allow-bat/seed/lOfficial kept (2026-10-18/25)',
     zoneOk && copyOk && forkOk,
-    'zone=' + zoneOk + ' copy=' + copyOk + ' fork=' + forkOk + ' engMd5=' + engMd5);
+    'zone=' + zoneOk + ' burst=' + burstOk + ' copy=' + copyOk + ' fork=' + forkOk +
+      ' engMd5=' + engMd5 + ' helperMd5=' + helperMd5);
+}
+
+// B63. Zone answers are NOT reused across a cursor move (upstream 2026-10-25 / PR #22)
+// Runs the REAL __acZoneAsk against a fake native port + controllable clock.
+{
+  const swSrc = fs.readFileSync(path.join(MV3, 'sw.js'), 'utf8');
+  const i0 = swSrc.indexOf('  function __acZoneAsk(timeoutMs, noShare) {');
+  const i1 = swSrc.indexOf('  // --- native type 485', i0);
+  const burstMs = Number((swSrc.match(/const __AC_ZONE_BURST_MS = (\d+)/) || [])[1]);
+  const bad = [];
+  if (i0 < 0 || i1 < 0) bad.push('__acZoneAsk not found in sw.js');
+  if (!(burstMs > 0 && burstMs <= 50)) bad.push('__AC_ZONE_BURST_MS=' + burstMs + ' (expected 1..50)');
+  if (/__AC_ZONE_CACHE_MS|__acZoneCacheZones|__acZoneCacheAt/.test(swSrc)) {
+    bad.push('the time-only zone TTL cache is back');
+  }
+  if (!/if \(!connected\) return;\s*try \{ __acZoneAsk\(300, true\); \} catch \(e\) \{\}/.test(swSrc)) {
+    bad.push('the keepalive does not pass noShare');
+  }
+  if (bad.length) {
+    check('zone gate: answer NOT reused across cursor move (burst share, keepalive noShare) (2026-10-25)',
+      false, bad.join('; '));
+  } else {
+    const src = swSrc.slice(i0, i1);
+    const mk = () => {
+      const listeners = [];
+      const clock = { now: 1000, timers: [] };
+      const port = {
+        sent: [],
+        postMessage(m) { port.sent.push(m); },
+        onMessage: { addListener: f => listeners.push(f) },
+        onDisconnect: { addListener: () => {} },
+        reply(m) { for (const f of listeners.slice()) f(m); }
+      };
+      const api = new Function('chrome', 'ZONE_HOST', '__AC_ZONE_BURST_MS', 'Date', 'setTimeout', `
+        let __acZoneReleasedUntil = 0;
+        let __acZoneShared = null;
+        let __acZoneSharedAt = 0;
+        let __acZoneSharedGen = 0;
+        let __acZonePort = null;
+        let __acZonePend = {};
+        let __acZoneTabPend = {};
+        let __acZoneSeq = 0;
+        ${src}
+        return { ask: __acZoneAsk, port: () => __acZonePort,
+                 shared: () => ({ on: !!__acZoneShared, at: __acZoneSharedAt, gen: __acZoneSharedGen }) };
+      `)({ runtime: { connectNative: () => port } }, 'com.autocontrol.zonehelper', burstMs,
+        { now: () => clock.now }, (fn, ms) => clock.timers.push({ fn, ms }));
+      return { clock, port, api };
+    };
+    Promise.resolve().then(async () => {
+      const bad2 = [];
+      {
+        const t = mk();
+        const p1 = t.api.ask(500);
+        t.clock.now += 5;
+        const p2 = t.api.ask(500);
+        if (t.port.sent.length !== 1) bad2.push('two 750s of one wheel made ' + t.port.sent.length + ' helper requests');
+        if (p1 !== p2) bad2.push('the burst did not share the SAME promise');
+        t.port.reply({ __id: 1, zones: [12, 4, 1] });
+        const z1 = await p1;
+        if (JSON.stringify(z1) !== '[12,4,1]') bad2.push('burst answer=' + JSON.stringify(z1));
+      }
+      {
+        const t = mk();
+        const p1 = t.api.ask(500);
+        t.clock.now += burstMs + 1;
+        const p2 = t.api.ask(500);
+        if (t.port.sent.length !== 2) bad2.push('a new wheel notch reused the old answer (' + t.port.sent.length + ' requests)');
+        t.port.reply({ __id: 1, zones: [12, 4, 1] });
+        t.port.reply({ __id: 2, zones: [3, 1] });
+        const [a, b] = await Promise.all([p1, p2]);
+        if (JSON.stringify(a) === JSON.stringify(b)) bad2.push('the second notch still saw the OLD zone ' + JSON.stringify(b));
+        if (JSON.stringify(b) !== '[3,1]') bad2.push('page answer=' + JSON.stringify(b));
+      }
+      {
+        const t = mk();
+        const pk = t.api.ask(300, true);
+        if (t.api.shared().on) bad2.push('the keepalive seeded the burst share');
+        t.clock.now += 1;
+        const pd = t.api.ask(500);
+        if (t.port.sent.length !== 2) bad2.push('the dispatch reused the keepalive request');
+        if (!t.api.shared().on) bad2.push('the dispatch did not open its own burst share');
+        if (pk === pd) bad2.push('the dispatch promise IS the keepalive promise');
+      }
+      {
+        const t = mk();
+        const pA = t.api.ask(500);
+        t.clock.now += burstMs + 1;
+        const pB = t.api.ask(500);
+        t.port.reply({ __id: 1, zones: [3, 1] });
+        await pA;
+        if (!t.api.shared().on) bad2.push('the older answer cleared the newer burst share');
+        t.port.reply({ __id: 2, zones: [12, 4, 1] });
+        const zb = await pB;
+        if (JSON.stringify(zb) !== '[12,4,1]') bad2.push('newer answer=' + JSON.stringify(zb));
+        if (t.api.shared().on) bad2.push('the burst share was not cleared after its own answer');
+      }
+      check('zone gate: answer NOT reused across cursor move (burst share, keepalive noShare) (2026-10-25)',
+        bad2.length === 0, bad2.length ? bad2.join('; ') :
+        'burst shares, new notch re-asks, keepalive bypasses, generation guard holds');
+    }).catch(e => check('zone gate: answer NOT reused across cursor move (burst share, keepalive noShare) (2026-10-25)',
+      false, e.message.split('\n')[0]));
+  }
 }
 
 // ---------- summary ----------
