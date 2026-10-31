@@ -60,19 +60,18 @@ Several of these match Chrome’s own shortcuts; the rest keep the same job but 
 
 **Mouse gestures** (hold middle button, drag, release):
 
-| Gesture | Same idea as                     | Difference                                                  |
-| ------- | -------------------------------- | ----------------------------------------------------------- |
-| ↑       | Ctrl+Shift+T (reopen closed tab) | None                                                        |
-| ↓       | F11 (fullscreen)                 | None                                                        |
-| ←       | Ctrl+H (History)                 | Opens **to the right of the current tab** (Chrome does not) |
-| →       | Ctrl+Shift+O (Bookmarks)         | Opens **to the right of the current tab** (Chrome does not) |
+| Gesture | Same idea as             | Difference                                                  |
+| ------- | ------------------------ | ----------------------------------------------------------- |
+| ↑       | Ctrl+T (new tab)         | Opens **to the right of the current tab** (Chrome does not) |
+| ↓       | F11 (fullscreen)         | None                                                        |
+| ←       | Ctrl+H (History)         | Opens **to the right of the current tab** (Chrome does not) |
+| →       | Ctrl+Shift+O (Bookmarks) | Opens **to the right of the current tab** (Chrome does not) |
 
 **Keyboard:**
 
 | Shortcut | Same idea as      | Difference                                                                                                       |
 | -------- | ----------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Ctrl+Tab | Chrome’s Ctrl+Tab | Switches to the **previously used** tab, not the next one on the strip                                           |
-| Ctrl+T   | Chrome’s Ctrl+T   | New tab to the **right** of the current tab, not at the far end                                                  |
 | Alt+E    | —                 | Opens `chrome://extensions` to the **right** of the current tab                                                  |
 | Alt+T    | —                 | Opens the Tampermonkey dashboard to the **right** of the current tab (change the URL if you use another manager) |
 
@@ -169,19 +168,18 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 
 **鼠标手势**（按住中键拖、松开）：
 
-| 手势 | 相当于                               | 差异                                          |
-| ---- | ------------------------------------ | --------------------------------------------- |
-| ↑    | Ctrl+Shift+T（重新打开刚关闭的标签） | 无                                            |
-| ↓    | F11（全屏）                          | 无                                            |
-| ←    | Ctrl+H（History）                    | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
-| →    | Ctrl+Shift+O（Bookmarks）            | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| 手势 | 相当于                   | 差异                                          |
+| ---- | ------------------------ | --------------------------------------------- |
+| ↑    | Ctrl+T（新建标签）       | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| ↓    | F11（全屏）              | 无                                            |
+| ←    | Ctrl+H（History）        | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| →    | Ctrl+Shift+O（Bookmarks）| 在当前标签**右侧**打开（Chrome 不会开在右侧） |
 
 **键盘：**
 
 | 快捷键   | 相当于             | 差异                                                                     |
 | -------- | ------------------ | ------------------------------------------------------------------------ |
 | Ctrl+Tab | Chrome 的 Ctrl+Tab | 切到**上次用的**标签，不是标签条上的下一个                               |
-| Ctrl+T   | Chrome 的 Ctrl+T   | 在当前标签**右侧**新建，不是甩到最右边                                   |
 | Alt+E    | —                  | 在当前标签**右侧**打开 `chrome://extensions`                             |
 | Alt+T    | —                  | 在当前标签**右侧**打开 Tampermonkey 面板（用别的脚本管理器就改这个网址） |
 

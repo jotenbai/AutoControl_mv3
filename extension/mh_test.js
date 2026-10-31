@@ -2338,19 +2338,27 @@ vm.runInContext(`
   let def = {};
   try { def = JSON.parse(fs.readFileSync(defPath, 'utf8')); } catch (e) { def = { _err: String(e) }; }
   const titles = (def.trigActList || []).map(x => x && x[1] && x[1].title);
+  const newtab = (def.trigActList || []).find(x => x && x[1] && x[1].title === 'open newtab');
+  const newtabUp = !!(newtab && newtab[1].triggers && newtab[1].triggers[0] &&
+    newtab[1].triggers[0].combins && newtab[1].triggers[0].combins[0] &&
+    newtab[1].triggers[0].combins[0].mouseMove === '1');
   const acsOk = fs.existsSync(defPath) &&
     !('natHostInstalled' in def) &&
-    Array.isArray(def.trigActList) && def.trigActList.length === 8 &&
+    Array.isArray(def.trigActList) && def.trigActList.length === 7 &&
     def.mouseGest && def.mouseGest.triggers && def.mouseGest.triggers.preset === 'middleButton' &&
     titles.includes('switch to previous tab') &&
-    titles.includes('open newtab');
+    titles.includes('open newtab') &&
+    !titles.includes('reopen closed tab') &&
+    newtabUp;
   const swOk = sw.includes('function __acSeedDefaultSettings') &&
     sw.includes("getURL('defaults.acs')") &&
     sw.includes('__acSeedDefaultSettings(() => { connect(); })') &&
     sw.includes('Never writes natHostInstalled') &&
     !/payload\.natHostInstalled/.test(sw);
   check('first-install defaults.acs seeded before native connect; no natHostInstalled (2026-09-16)',
-    acsOk && swOk, 'acs=' + acsOk + ' sw=' + swOk + ' n=' + (def.trigActList || []).length);
+    acsOk && swOk,
+    'acs=' + acsOk + ' sw=' + swOk + ' n=' + (def.trigActList || []).length +
+      ' newtabUp=' + newtabUp + ' titles=' + JSON.stringify(titles));
 }
 
 // B60. Store-ID callback offset (2026-09-23): CWS id ifjogpfn… → l=25504;
