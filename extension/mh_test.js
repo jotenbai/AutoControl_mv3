@@ -2288,12 +2288,13 @@ vm.runInContext(`
   const ok = mf.default_locale === 'en' &&
     mf.name === '__MSG_extName__' &&
     mf.description === '__MSG_extDescription__' &&
-    mf.version === '1.4' &&
+    mf.version === '1.5' &&
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
     pack.includes('strips the original') &&
     pack.includes('[regex]::Replace') &&
+    pack.includes('build-file69-cws.ps1') &&
     sw.includes('function __acEnsureNativeOrigin') &&
     sw.includes('function __acOfferNativeOriginPatcher') &&
     sw.includes('/forbidden/i') &&
@@ -2304,6 +2305,32 @@ vm.runInContext(`
     mainHtml.includes('allowOrigin');
   check('store branding: AutoControl_mv3 locales + pack zip strips original key (2026-09-16)',
     ok, 'ver=' + mf.version + ' locale=' + mf.default_locale + ' hasKey=' + !!mf.key);
+}
+
+// B57b. file69.dat Install-emit: decrypt contains CWS + original origins (v1.5)
+{
+  const datPath = path.join(MV3, 'file69.dat');
+  const KEY = [94, 14, 77, 49, 13];
+  let ok = false;
+  let detail = 'missing';
+  if (fs.existsSync(datPath)) {
+    const dat = fs.readFileSync(datPath);
+    const n = dat.length;
+    const exe = Buffer.alloc(n);
+    for (let i = 0; i < n; i++) {
+      let g = (dat[n - 1 - i] - KEY[i % 5] - i) % 256;
+      if (g < 0) g += 256;
+      exe[i] = g;
+    }
+    const s = exe.toString('binary');
+    const hasStore = s.includes('ifjogpfnljedincfpelmhaljnllegckm');
+    const hasOrig = s.includes('lkaihdpfpifdlgoapbfocpmekbokmcfd');
+    const noCompanion = !s.includes('baikhopphokjmcllncdeocblfpeaklnj');
+    const mz = exe[0] === 0x4d && exe[1] === 0x5a;
+    ok = mz && hasStore && hasOrig && noCompanion;
+    detail = 'mz=' + mz + ' store=' + hasStore + ' orig=' + hasOrig + ' noBai=' + noCompanion;
+  }
+  check('file69.dat decrypts to Zero with CWS+original origins (Install-emit v1.5)', ok, detail);
 }
 
 // B58. fullscreenWins toggle read stale `_cd[g].state` (2026-09-16).

@@ -405,12 +405,12 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
      `FUN_00403da0` (stdin length-prefixed loop) with **no** origin strcmp.
      Gate = Chrome reading `allowed_origins` (+ Install rewriting the 14).
      Blind “plan B” slot-swap was removed in v1.4 after Install-loop /
-     minimize storms. **Revive as Install-emit only:**
-     `tools/patch-zero-cws-origin.ps1` replaces companion
-     `baikhop…` → store `ifjogpfn…` (keeps `lkaihd…`). Output
-     `tools/patched/` (gitignored). Apply:
-     `.\tools\patch-zero-cws-origin.ps1 -ApplyInstalled` then **store-ID
-     extension only** → Native Install/Repair to rewrite the manifest.
+     minimize storms. **v1.5 Install-emit in the shipped blob:**
+     `tools/build-file69-cws.ps1` (also run by `package.ps1`) patches
+     companion `baikhop…` → store `ifjogpfn…` (keeps `lkaihd…`) and
+     re-encodes into `extension/file69.dat` via `_7g`. Native Install
+     decrypts that blob → writes both origins. Load unpacked (key→
+     `lkaihd…`) and CWS ZIP (no key→`ifjogpfn…`) share the same dat.
      Live Ghidra notes: `.cursor/rules/ghidra-zero-re.mdc` (local only).
 - **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
   after reloading unpacked 1.1 → 1.2, Chrome could not start the host and

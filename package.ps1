@@ -1,9 +1,10 @@
 # Packs extension/ as a Chrome Web Store ZIP (strips the original `key`).
 # Run from the repo root: .\package.ps1
+# Before zipping: rebuilds extension/file69.dat so Native Install embeds both
+# the original ID (lkaihd…) and the CWS ID (ifjogpfn…) in allowed_origins.
 # The zip does NOT include the original AutoControl public `key` — CWS assigns
 # a new item ID. Unpacked Load still uses extension/manifest.json as-is (key
-# kept so this machine keeps the original native-host ID until you paste the
-# store public key back).
+# kept so this machine keeps the original native-host ID).
 # Output: AutoControl_mv3-v<version>.zip at the repo root (gitignored).
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +14,9 @@ $manifestPath = Join-Path $src 'manifest.json'
 if (-not (Test-Path $manifestPath)) {
     throw "extension/manifest.json not found. Run this from the repo root."
 }
+
+# Ensure file69.dat carries the CWS origin (Install-emit). Idempotent.
+& (Join-Path $root 'tools\build-file69-cws.ps1') | Out-Host
 
 $manifest = Get-Content -Raw -Encoding UTF8 $manifestPath | ConvertFrom-Json
 $ver = $manifest.version
@@ -43,4 +47,5 @@ try {
 }
 
 Write-Host "Wrote $outName ($((Get-Item $outPath).Length) bytes)"
-Write-Host "Store zip has no original key (new CWS ID). Load unpacked still uses extension/ with key."
+Write-Host "Store zip has no original key (CWS ID). file69.dat includes ifjogpfn… + lkaihd… origins."
+Write-Host "Load unpacked still uses extension/ with key (lkaihd…)."
