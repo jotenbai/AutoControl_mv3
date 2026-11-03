@@ -397,16 +397,20 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
   the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
   README steers end users to Load unpacked from GitHub.
-  3. **Zero embedded origins — plan B DISPROVED (2026-10-20/21; RE 2026-11-01)**:
-     `AutoControlZero.exe` embeds the same 14 IDs **only to write**
+  3. **Zero embedded origins (RE 2026-11-01; Install-emit patch 2026-11-03)**:
+     `AutoControlZero.exe` embeds 14 IDs **only to write**
      `AutoControl.manifest` (`installNativeHost` / was `FUN_00405370`).
      Engine has no `chrome-extension` strings. Chrome-launched path is
-     `main`(`FUN_00406650`) → when argc>1 and argv≠`/noConfirm` →
-     `FUN_00403da0` (stdin 4-byte-length native-messaging loop); that
-     loop shows **no** origin/ID strcmp. So the practical gate is Chrome
-     reading `allowed_origins` (+ Install rewriting the 14). Slot-swap
-     of Zero strings was **removed** in v1.4 — do not revive. Store-viable
-     native needs Install to emit the CWS origin (or a rewritten host).
+     `main`(`FUN_00406650`) → argc>1 and argv≠`/noConfirm` →
+     `FUN_00403da0` (stdin length-prefixed loop) with **no** origin strcmp.
+     Gate = Chrome reading `allowed_origins` (+ Install rewriting the 14).
+     Blind “plan B” slot-swap was removed in v1.4 after Install-loop /
+     minimize storms. **Revive as Install-emit only:**
+     `tools/patch-zero-cws-origin.ps1` replaces companion
+     `baikhop…` → store `ifjogpfn…` (keeps `lkaihd…`). Output
+     `tools/patched/` (gitignored). Apply:
+     `.\tools\patch-zero-cws-origin.ps1 -ApplyInstalled` then **store-ID
+     extension only** → Native Install/Repair to rewrite the manifest.
      Live Ghidra notes: `.cursor/rules/ghidra-zero-re.mdc` (local only).
 - **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
   after reloading unpacked 1.1 → 1.2, Chrome could not start the host and
