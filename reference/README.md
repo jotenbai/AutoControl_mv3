@@ -6,6 +6,8 @@ This fork’s notes live in `../AGENTS.md`. History is `git log`.
 
 **Snapshot tip:** `e37bed8` (2026-11-01 refresh — PR #22 zone-table stale-on-move: helper provisional invalidation + SW 15 ms burst share / `noShare`).
 
+**Last sync check:** 2026-11-08 — upstream tip still `e37bed8` (no new commits). `git rev-list --count HEAD..upstream/master` = **29** (history-only behind; directory layout diverged — do **not** treat this number alone as “content to port”). Content of the four folders below matched upstream tip.
+
 ## Original AutoControl docs (live site)
 
 Alex’s GitHub Pages mirror of the old autocontrol.app manuals:

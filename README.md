@@ -60,8 +60,8 @@ Several of these match Chrome’s own shortcuts; the rest keep the same job but 
 
 | Gesture | Same idea as             | Difference                                                  |
 | ------- | ------------------------ | ----------------------------------------------------------- |
-| ↑       | Ctrl+T (new tab)         | Opens **to the right of the current tab** (Chrome does not) |
-| ↓       | F11 (fullscreen)         | None                                                        |
+| ↑       | Ctrl+Shift+T (reopen)    | Same idea as Chrome’s reopen-closed-tab                     |
+| ↓       | Ctrl+T (new tab)         | Opens **to the right of the current tab** (Chrome does not) |
 | ←       | Ctrl+H (History)         | Opens **to the right of the current tab** (Chrome does not) |
 | →       | Ctrl+Shift+O (Bookmarks) | Opens **to the right of the current tab** (Chrome does not) |
 
@@ -164,12 +164,12 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 
 **鼠标手势**（按住中键拖、松开）：
 
-| 手势 | 相当于                   | 差异                                          |
-| ---- | ------------------------ | --------------------------------------------- |
-| ↑    | Ctrl+T（新建标签）       | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
-| ↓    | F11（全屏）              | 无                                            |
-| ←    | Ctrl+H（History）        | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
-| →    | Ctrl+Shift+O（Bookmarks）| 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| 手势 | 相当于                     | 差异                                          |
+| ---- | -------------------------- | --------------------------------------------- |
+| ↑    | Ctrl+Shift+T（恢复标签）   | 与 Chrome 重新打开关闭的标签同类              |
+| ↓    | Ctrl+T（新建标签）         | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| ←    | Ctrl+H（History）          | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
+| →    | Ctrl+Shift+O（Bookmarks）  | 在当前标签**右侧**打开（Chrome 不会开在右侧） |
 
 **键盘：**
 

@@ -2289,7 +2289,7 @@ vm.runInContext(`
   const ok = mf.default_locale === 'en' &&
     mf.name === '__MSG_extName__' &&
     mf.description === '__MSG_extDescription__' &&
-    mf.version === '1.5' &&
+    mf.version === '1.6' &&
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
@@ -2341,17 +2341,23 @@ vm.runInContext(`
   try { def = JSON.parse(fs.readFileSync(defPath, 'utf8')); } catch (e) { def = { _err: String(e) }; }
   const titles = (def.trigActList || []).map(x => x && x[1] && x[1].title);
   const newtab = (def.trigActList || []).find(x => x && x[1] && x[1].title === 'open newtab');
-  const newtabUp = !!(newtab && newtab[1].triggers && newtab[1].triggers[0] &&
-    newtab[1].triggers[0].combins && newtab[1].triggers[0].combins[0] &&
-    newtab[1].triggers[0].combins[0].mouseMove === '1');
+  const reopen = (def.trigActList || []).find(x => x && x[1] && x[1].title === 'reopen closed tab');
+  const mouseOf = (row) => row && row[1] && row[1].triggers && row[1].triggers[0] &&
+    row[1].triggers[0].combins && row[1].triggers[0].combins[0] &&
+    row[1].triggers[0].combins[0].mouseMove;
+  const reopenUp = mouseOf(reopen) === '1';
+  const newtabDown = mouseOf(newtab) === '5';
+  const reopenIcon = !!(reopen && reopen[1].icon && typeof reopen[1].icon.img === 'string' &&
+    reopen[1].icon.img.indexOf('data:image/png;base64,') === 0);
   const acsOk = fs.existsSync(defPath) &&
     !('natHostInstalled' in def) &&
     Array.isArray(def.trigActList) && def.trigActList.length === 7 &&
     def.mouseGest && def.mouseGest.triggers && def.mouseGest.triggers.preset === 'middleButton' &&
     titles.includes('switch to previous tab') &&
     titles.includes('open newtab') &&
-    !titles.includes('reopen closed tab') &&
-    newtabUp;
+    titles.includes('reopen closed tab') &&
+    !titles.includes('toggle fullscreen') &&
+    reopenUp && newtabDown && reopenIcon;
   const swOk = sw.includes('function __acSeedDefaultSettings') &&
     sw.includes("getURL('defaults.acs')") &&
     sw.includes('__acSeedDefaultSettings(() => { connect(); })') &&
@@ -2360,7 +2366,7 @@ vm.runInContext(`
   check('first-install defaults.acs seeded before native connect; no natHostInstalled (2026-09-16)',
     acsOk && swOk,
     'acs=' + acsOk + ' sw=' + swOk + ' n=' + (def.trigActList || []).length +
-      ' newtabUp=' + newtabUp + ' titles=' + JSON.stringify(titles));
+      ' reopenUp=' + reopenUp + ' newtabDown=' + newtabDown + ' titles=' + JSON.stringify(titles));
 }
 
 // B60. Store-ID callback offset (2026-09-23): CWS id ifjogpfn… → l=25504;

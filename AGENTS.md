@@ -721,16 +721,18 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   explicit `rightButton` preset when testing the RMB strip. Do not revert
   those fallbacks to MV2 without updating B56.
 - **Built-in sample actions on first install (2026-09-16, B59; defaults
-  reshuffle 2026-11-01)** — `extension/defaults.acs` is packed with the
-  extension. sw.js `__acSeedDefaultSettings` runs BEFORE `connect()`: if
-  `trigActList` is missing/empty AND `__acDefaultsSeeded` is unset, it writes
-  `trigActList` + `mouseGest` from that file. NEVER seed `natHostInstalled`
-  (that would skip the native Install UI). Existing profiles with actions are
-  not overwritten on update. Emptying every action in the UI does not re-seed
-  (flag stays). `storage.local.clear()` removes the flag → next SW start
-  re-seeds. Sample set (7): middle-↑ = open newtab (was Ctrl+T; reopen-closed
-  removed), ↓ fullscreen, ← history, → bookmarks, Ctrl+Tab previous tab,
-  Alt+E extensions, Alt+T Tampermonkey. mh_test B59. NO bundle rebuild.
+  reshuffle 2026-11-01 / 2026-11-08)** — `extension/defaults.acs` is packed
+  with the extension. sw.js `__acSeedDefaultSettings` runs BEFORE `connect()`:
+  if `trigActList` is missing/empty AND `__acDefaultsSeeded` is unset, it
+  writes `trigActList` + `mouseGest` from that file. NEVER seed
+  `natHostInstalled` (that would skip the native Install UI). Existing
+  profiles with actions are not overwritten on update. Emptying every action
+  in the UI does not re-seed (flag stays). `storage.local.clear()` removes
+  the flag → next SW start re-seeds. Sample set (7): middle-↑ = reopen
+  closed tab (Ctrl+Shift+T; icon restored from pre-2026-11-01), ↓ = open
+  newtab to the right (was ↑ on 11-01; fullscreen dropped), ← history, →
+  bookmarks, Ctrl+Tab previous tab, Alt+E extensions, Alt+T Tampermonkey.
+  mh_test B59. NO bundle rebuild.
 
 ### UI / settings
 
