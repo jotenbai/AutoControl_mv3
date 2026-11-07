@@ -21,9 +21,9 @@ This includes comments, log strings, and error messages in `sw.js`,
   happens.** Load this folder in Chrome as an unpacked extension. Contains its
   own copies of the core `file*.js`/`res/` — independent from
   `reference/ext-mv2/`.
-- **`webstore/`** = store listing copy that is **not** zipped: `privacy.md`,
-  `description.txt`, `permissions.txt`, `screenshots/` (flat files such as
-  `global1.jpg`; no language subfolders).
+- **`webstore/`** = **archive only** (CWS abandoned): `privacy.md`,
+  `description.txt` (steers to GitHub), `permissions.txt`, `screenshots/`.
+  Not zipped; not a live store listing.
 - **`reference/`** = snapshots of `upstream/master` — **keep identical** to
   Alex’s trees (`Docs/`, `ext-mv2/`, `AutoControl_native/`,
   `Toolbar-buttons/`). Refresh by replacing those four folders from
@@ -34,18 +34,18 @@ This includes comments, log strings, and error messages in `sw.js`,
   - **`reference/Docs/`** = Alex’s port notes + `autocontrol.app-site/`.
   - **`reference/AutoControl_native/`** = `original/` Zero+engine,
     `patched/` engine v19, `ac_zone_helper.exe`, `patches/`. Store ID is
-    **not** patched here; CWS “forbidden” → Allow-bat from the SW.
+    **not** patched here; CWS abandoned — Load unpacked only.
     Snapshot tip `e37bed8` (2026-11-01).
   - **`reference/Toolbar-buttons/`** = auxiliary MV2/MV3 button builds.
 - **Repo root** = `AGENTS.md`, `README.md` (EN + 简体中文 install guide),
-  `package.ps1` (zips `extension/` only;
-  **strips the original `key`** so CWS gets a new ID),
+  `package.ps1` (archival ZIP of `extension/` only; strips `key` —
+  **CWS upload abandoned**; supported install = Load unpacked),
+  `webstore/` (archive of old store copy; `description.txt` steers to GitHub),
   `Test/` (API self-test + ACS snapshot).
   This fork develops on `origin/master` independently of `upstream`.
-  Store listing name is **AutoControl_mv3** (`extension/_locales`),
-  draft/store ID `ifjogpfnljedincfpelmhaljnllegckm`.
-  Unpacked `manifest.json` still contains the original `key` so local
-  native messaging keeps the old ID until the store public key is pasted.
+  Display name **AutoControl_mv3** (`extension/_locales`). Unpacked
+  `manifest.json` keeps the original `key` → ID `lkaihd…` for native
+  messaging. Former draft store ID `ifjogpfn…` is not supported.
 - NOTE: the old loose MV3 shims at the repo root were REMOVED (cleanup
   commit) — the working copies live in `extension/`. Do not recreate them.
 
@@ -382,36 +382,28 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   1. **Callback `l` offset (FIXED in sw.js)**: file61 hardcodes `l=13625`
      for handshake; CWS ID hashes to 25504. `postWithCb` always SENDS with
      13625 and ACCEPTS either echo. mh_test B60.
-  2. **Installer wipes whitelist (FIXED UX 2026-09-26)**: Native-Component
-     Reinstall rewrites `AutoControl.manifest` without the store origin →
-     `connectNative` forbidden again. `__acEnsureNativeOrigin` only runs
-     AFTER handshake (chicken-and-egg). FIX: Install click and the
-     “Native not working” dialog offer `patchNativeOrigin` (user-gesture
-     download of `Allow-*.bat` into Downloads); new **Allow this extension
-     ID** button. Handshake also sends
-     type 40 false twice (stuck-capture / wild-minimize hedge). Download
-     only runs on a real user gesture (forbidden-from-SW no longer calls
-     `chrome.downloads` — that caused “must be called during a user
-     gesture” Errors on non-original IDs).
+  2. **Installer whitelist / Allow-bat (2026-09-26 → removed 2026-11-08)**:
+     Native-Component Reinstall rewrites `AutoControl.manifest` from the
+     embedded 14 IDs. `__acEnsureNativeOrigin` still appends the running
+     origin after handshake. Allow-bat download + **Allow this extension
+     ID** UI were for the draft CWS ID and are **removed** (CWS abandoned).
+     Alt-ID `connectNative` forbidden → notification steers to GitHub
+     Load unpacked. Handshake still sends type 40 false twice (stuck-
+     capture / wild-minimize hedge).
   Do **not** load store-ID and unpacked builds in the same Chrome profile
-  (LL-hook fights → windows keep minimizing). Daily Load unpacked keeps
-  the **original** `key` → `lkaihd…`. Store listing is testing/unlisted;
-  README steers end users to Load unpacked from GitHub.
-  3. **Zero embedded origins (RE 2026-11-01; Install-emit patch 2026-11-03)**:
+  (LL-hook fights → windows keep minimizing). Supported path: Load
+  unpacked with original `key` → `lkaihd…`.
+  3. **Zero embedded origins (RE 2026-11-01) + CWS abandoned (2026-11-08)**:
      `AutoControlZero.exe` embeds 14 IDs **only to write**
      `AutoControl.manifest` (`installNativeHost` / was `FUN_00405370`).
-     Engine has no `chrome-extension` strings. Chrome-launched path is
-     `main`(`FUN_00406650`) → argc>1 and argv≠`/noConfirm` →
-     `FUN_00403da0` (stdin length-prefixed loop) with **no** origin strcmp.
-     Gate = Chrome reading `allowed_origins` (+ Install rewriting the 14).
-     Blind “plan B” slot-swap was removed in v1.4 after Install-loop /
-     minimize storms. **v1.5 Install-emit in the shipped blob:**
-     `tools/build-file69-cws.ps1` (also run by `package.ps1`) patches
-     companion `baikhop…` → store `ifjogpfn…` (keeps `lkaihd…`) and
-     re-encodes into `extension/file69.dat` via `_7g`. Native Install
-     decrypts that blob → writes both origins. Load unpacked (key→
-     `lkaihd…`) and CWS ZIP (no key→`ifjogpfn…`) share the same dat.
-     Live Ghidra notes: `.cursor/rules/ghidra-zero-re.mdc` (local only).
+     Messaging loop has **no** origin strcmp; gate = Chrome
+     `allowed_origins`. Store ID (`ifjogpfn…`) + Load-unpacked
+     (`lkaihd…`) in one Chrome profile → LL-hook fights / window-minimize
+     storms (reproduced on company PC). **CWS listing abandoned**;
+     supported install = Load unpacked with original `key`. `file69.dat`
+     restored to stock (original 14). `tools/` CWS patch scripts
+     removed. Archive: `webstore/description.txt` steers users to GitHub.
+     Ghidra notes: `.cursor/rules/ghidra-zero-re.mdc` (local only).
 - **Extension update corrupted `AutoControlZero.exe` (FIXED 2026-09-27)** —
   after reloading unpacked 1.1 → 1.2, Chrome could not start the host and
   Windows showed "This app can't run on your PC"; the installed Zero was
@@ -719,7 +711,7 @@ intentionally). Full round-by-round narratives live in `reference/Docs/archive/`
   `noShare` for keepalive / health / port-open pings. Helper also
   provisionally invalidates the engine zone table while the cursor moves.
   UI labels no longer say “broken in Chrome 148+”. Menu-item regions 40–51
-  still engine-classified. mh_test B62/B63. Fork Allow-bat / `lOfficial` /
+  still engine-classified. mh_test B62/B63. Fork `lOfficial` /
   defaults seed kept.
 - **This fork's empty-config gesture default is middle button / 4 dirs**
   (2026-09-16, B56) — MV2 `_0p` used `preset||"rightButton"` and the

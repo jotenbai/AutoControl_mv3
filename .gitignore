@@ -3,10 +3,6 @@
 *.crx
 *.pem
 
-# Local Zero patch output / backups (regenerate via tools/patch-zero-cws-origin.ps1)
-tools/patched/
-*.bak-pre-cws
-
 # Editors
 .cursor/
 .vscode/

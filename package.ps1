@@ -1,10 +1,8 @@
-# Packs extension/ as a Chrome Web Store ZIP (strips the original `key`).
+# Packs extension/ as a ZIP (strips the original `key` if present).
 # Run from the repo root: .\package.ps1
-# Before zipping: rebuilds extension/file69.dat so Native Install embeds both
-# the original ID (lkaihd…) and the CWS ID (ifjogpfn…) in allowed_origins.
-# The zip does NOT include the original AutoControl public `key` — CWS assigns
-# a new item ID. Unpacked Load still uses extension/manifest.json as-is (key
-# kept so this machine keeps the original native-host ID).
+# This fork’s supported install is Load unpacked from GitHub (keep the original
+# key in extension/manifest.json). Store upload is abandoned — native hooks
+# conflict with a second extension ID. package.ps1 remains for archival zips.
 # Output: AutoControl_mv3-v<version>.zip at the repo root (gitignored).
 
 $ErrorActionPreference = 'Stop'
@@ -15,9 +13,6 @@ if (-not (Test-Path $manifestPath)) {
     throw "extension/manifest.json not found. Run this from the repo root."
 }
 
-# Ensure file69.dat carries the CWS origin (Install-emit). Idempotent.
-& (Join-Path $root 'tools\build-file69-cws.ps1') | Out-Host
-
 $manifest = Get-Content -Raw -Encoding UTF8 $manifestPath | ConvertFrom-Json
 $ver = $manifest.version
 $outName = "AutoControl_mv3-v$ver.zip"
@@ -27,7 +22,7 @@ if (Test-Path $outPath) { Remove-Item -Force $outPath }
 
 $locales = Join-Path $src '_locales'
 if (-not (Test-Path (Join-Path $locales 'en\messages.json'))) {
-    throw "extension/_locales/en/messages.json missing — CWS multilingual listing needs it."
+    throw "extension/_locales/en/messages.json missing."
 }
 
 $stage = Join-Path $env:TEMP ("ac-mv3-pack-" + [guid]::NewGuid().ToString('N'))
@@ -37,15 +32,16 @@ try {
     $stagedManifestPath = Join-Path $stage 'manifest.json'
     $raw = Get-Content -Raw -Encoding UTF8 $stagedManifestPath
     $stripped = [regex]::Replace($raw, ',\s*"key"\s*:\s*"[A-Za-z0-9+/=]+"', '')
-    if ($stripped -eq $raw) {
-        throw "Store zip must not ship the original AutoControl key; strip failed."
+    if ($stripped -ne $raw) {
+        Set-Content -Encoding UTF8 -NoNewline -Path $stagedManifestPath -Value $stripped
+        Write-Host "Staged zip: original key stripped."
+    } else {
+        Write-Host "Staged zip: no key field to strip."
     }
-    Set-Content -Encoding UTF8 -NoNewline -Path $stagedManifestPath -Value $stripped
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $outPath -CompressionLevel Optimal
 } finally {
     Remove-Item -Recurse -Force $stage
 }
 
 Write-Host "Wrote $outName ($((Get-Item $outPath).Length) bytes)"
-Write-Host "Store zip has no original key (CWS ID). file69.dat includes ifjogpfn… + lkaihd… origins."
-Write-Host "Load unpacked still uses extension/ with key (lkaihd…)."
+Write-Host "Supported install: Load unpacked → extension/ (keep key / original ID)."

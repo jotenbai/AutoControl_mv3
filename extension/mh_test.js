@@ -2273,8 +2273,9 @@ vm.runInContext(`
     'src=' + srcOk + ' mid=' + rt.hasMid + ' midUp=' + rt.hasMidUp + ' rmb=' + rt.hasRmb);
 }
 
-// B57. Store listing branding (2026-09-16): AutoControl_mv3 locales +
-// package.ps1 strips the original key. Unpacked manifest still has `key`.
+// B57. Branding (2026-09-16; CWS abandoned 2026-11-08): AutoControl_mv3
+// locales + package.ps1 can strip key for archival zips. Unpacked keeps `key`.
+// No Allow-bat / allowOrigin UI (store path removed).
 {
   const mf = JSON.parse(fs.readFileSync(path.join(MV3, 'manifest.json'), 'utf8'));
   const locEn = path.join(MV3, '_locales', 'en', 'messages.json');
@@ -2292,45 +2293,19 @@ vm.runInContext(`
     typeof mf.key === 'string' && mf.key.length > 80 &&
     fs.existsSync(locEn) && fs.existsSync(locZh) && fs.existsSync(locJa) &&
     msgs.extName && msgs.extName.message === 'AutoControl_mv3' &&
-    pack.includes('strips the original') &&
     pack.includes('[regex]::Replace') &&
-    pack.includes('build-file69-cws.ps1') &&
     sw.includes('function __acEnsureNativeOrigin') &&
     sw.includes('function __acOfferNativeOriginPatcher') &&
     sw.includes('/forbidden/i') &&
-    sw.includes('Allow-AutoControl_mv3-native.bat') &&
+    !sw.includes('Allow-AutoControl_mv3-native.bat') &&
     sw.includes('case "patchNativeOrigin"') &&
     sw.includes('__acNeedsNativeOriginPatch') &&
-    f2.includes('patchNativeOrigin') &&
-    mainHtml.includes('allowOrigin');
-  check('store branding: AutoControl_mv3 locales + pack zip strips original key (2026-09-16)',
+    !f2.includes('patchNativeOrigin') &&
+    !mainHtml.includes('allowOrigin') &&
+    mainHtml.includes('GitHub') &&
+    mainHtml.includes('not supported');
+  check('branding: AutoControl_mv3 locales; no Allow-bat UI; unpacked keeps key',
     ok, 'ver=' + mf.version + ' locale=' + mf.default_locale + ' hasKey=' + !!mf.key);
-}
-
-// B57b. file69.dat Install-emit: decrypt contains CWS + original origins (v1.5)
-{
-  const datPath = path.join(MV3, 'file69.dat');
-  const KEY = [94, 14, 77, 49, 13];
-  let ok = false;
-  let detail = 'missing';
-  if (fs.existsSync(datPath)) {
-    const dat = fs.readFileSync(datPath);
-    const n = dat.length;
-    const exe = Buffer.alloc(n);
-    for (let i = 0; i < n; i++) {
-      let g = (dat[n - 1 - i] - KEY[i % 5] - i) % 256;
-      if (g < 0) g += 256;
-      exe[i] = g;
-    }
-    const s = exe.toString('binary');
-    const hasStore = s.includes('ifjogpfnljedincfpelmhaljnllegckm');
-    const hasOrig = s.includes('lkaihdpfpifdlgoapbfocpmekbokmcfd');
-    const noCompanion = !s.includes('baikhopphokjmcllncdeocblfpeaklnj');
-    const mz = exe[0] === 0x4d && exe[1] === 0x5a;
-    ok = mz && hasStore && hasOrig && noCompanion;
-    detail = 'mz=' + mz + ' store=' + hasStore + ' orig=' + hasOrig + ' noBai=' + noCompanion;
-  }
-  check('file69.dat decrypts to Zero with CWS+original origins (Install-emit v1.5)', ok, detail);
 }
 
 // B58. fullscreenWins toggle read stale `_cd[g].state` (2026-09-16).
@@ -2460,9 +2435,9 @@ vm.runInContext(`
     f95.includes('_hB(_4o(e.content).fragment,a)') &&
     f95.includes('windows.get(g'); // fork B58 fullscreen toggle kept
   const forkOk = sw.includes('lOfficial') &&
-    sw.includes('patchNativeOrigin') &&
+    sw.includes('__acEnsureNativeOrigin') &&
     sw.includes('__acSeedDefaultSettings');
-  check('zone helper + v19 engine + copy-URLs ported; 15ms burst share + noShare; fork Allow-bat/seed/lOfficial kept (2026-10-18/25)',
+  check('zone helper + v19 engine + copy-URLs ported; 15ms burst share + noShare; fork seed/lOfficial kept (2026-10-18/25)',
     zoneOk && copyOk && forkOk,
     'zone=' + zoneOk + ' burst=' + burstOk + ' copy=' + copyOk + ' fork=' + forkOk +
       ' engMd5=' + engMd5 + ' helperMd5=' + helperMd5);

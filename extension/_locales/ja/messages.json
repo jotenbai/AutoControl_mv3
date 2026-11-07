@@ -1,7 +1,7 @@
 {
   "extName": {
     "message": "AutoControl_mv3",
-    "description": "ストアと chrome://extensions の表示名"
+    "description": "chrome://extensions の表示名"
   },
   "extShortName": {
     "message": "AutoControl_mv3",
@@ -9,7 +9,7 @@
   },
   "extDescription": {
     "message": "非公式 MV3 移植。キーボードショートカット、マウスジェスチャ、chrome:// ページを開けます。",
-    "description": "Chrome ウェブストアの短い説明（132 文字以内）"
+    "description": "拡張機能の短い説明"
   },
   "actionTitle": {
     "message": "AutoControl_mv3 の設定",

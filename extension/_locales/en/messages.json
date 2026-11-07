@@ -1,7 +1,7 @@
 {
   "extName": {
     "message": "AutoControl_mv3",
-    "description": "Store listing and chrome://extensions name"
+    "description": "chrome://extensions display name"
   },
   "extShortName": {
     "message": "AutoControl_mv3",
@@ -9,7 +9,7 @@
   },
   "extDescription": {
     "message": "Unofficial MV3 port: keyboard shortcuts, mouse gestures, and Open URL for chrome:// pages.",
-    "description": "Chrome Web Store short description (keep under 132 characters)"
+    "description": "Extension short description"
   },
   "actionTitle": {
     "message": "AutoControl_mv3 settings",

@@ -2,7 +2,7 @@
 
 This repository is an unofficial Manifest V3 port of the original AutoControl Chrome extension. It is **not** affiliated with the original AutoControl authors and is **not** an update of the old Chrome Web Store item. The original site is dead; a documentation mirror lives at [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/).
 
-Store listing (when published) and source: [github.com/jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). This policy URL is what you paste into the Chrome Web Store “Privacy policy” field.
+Install from GitHub only (Load unpacked): [github.com/jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). A Chrome Web Store build was abandoned (native hook conflicts with a second extension ID). This file remains as the project privacy statement.
 
 ## What the extension does
 

@@ -1,101 +1,110 @@
 ===== ENGLISH =====
+⛔ STORE BUILD DOES NOT WORK — do not install from the Chrome Web Store.
+
+Native keyboard/mouse hooks cannot safely share a Chrome profile with a second
+extension ID. The Web Store listing (if still visible) is abandoned.
+
+✅ Install from GitHub instead (Load unpacked → the extension/ folder):
+https://github.com/jotenbai/AutoControl_mv3
+
+Keep that folder on disk; Chrome must keep reading it. Full steps are in the
+README on GitHub.
+
+---
+
 ⚡ AutoControl_mv3 — unofficial Manifest V3 port (keyboard shortcuts + mouse gestures)
 
-The original AutoControl listing was removed from the Chrome Web Store. This is a community port with a new name and a new store ID so it is not an update of that item.
+The original AutoControl listing was removed from the Chrome Web Store. This is a community port.
 
 ⚠️ Not the original product. Not affiliated with the original authors. Settings UI stays in English.
-The listing is only so people can install it easily. If it infringes the original AutoControl authors’ rights, it will be taken down.
 
-✨ What still works
+✨ What still works (when installed from GitHub as above)
 • Keyboard shortcuts and mouse gestures through the original Windows native engine
-• Those shortcuts still work on Chrome’s own chrome:// pages (history, bookmarks, extensions) — ordinary extensions cannot
+• Those shortcuts still work on Chrome’s own chrome:// pages (history, bookmarks, extensions)
 • Open URL, including chrome:// pages
 • Tab actions: switch, pin, mute, reopen closed tab
 • Run Script / ACtl on normal web pages (enable “Allow user scripts”)
 • Settings import / export (.acs)
 
-🔧 Setup
-1. Install from the Chrome Web Store
-2. Open the extension → Install the native component → run the installer
-3. If Chrome says the native host is forbidden: run Allow-AutoControl_mv3-native.bat, then reload
+🔧 Setup (GitHub only)
+1. Clone or download https://github.com/jotenbai/AutoControl_mv3
+2. chrome://extensions → Developer mode → Load unpacked → select the extension/ folder
+3. Open the extension → Install the native component
 4. Details → turn on “Allow user scripts”
-5. A few sample shortcuts are already there — edit them in Extension options. Full list: https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
-
-🐙 Open source
-Source is on GitHub:
-https://github.com/jotenbai/AutoControl_mv3
-Issues and pull requests welcome (store reviews alone are harder to act on).
-
-📌 Why this port
-Chrome Manifest V3 killed the always-on background page. The original team stopped. This build runs the same obfuscated logic in a service worker plus shims. Some hover-region conditions are broken in Chrome 148+ (native hit-test, MV2 and MV3 alike).
+5. Sample shortcuts: https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
 
 🔒 Privacy
-Settings stay on your PC. Usage telemetry is off unless you enable it in Advanced Options. Policy: https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
+Settings stay on your PC. Policy: https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
 
 ===== 简体中文 =====
+⛔ 商店版无法正常使用 — 请不要从 Chrome 网上应用店安装。
+
+原生键盘/鼠标钩子无法在同一 Chrome 配置里安全地服务两个不同的扩展 ID。
+网上应用店上架已放弃（若页面仍在，请忽略）。
+
+✅ 请到 GitHub 安装（加载已解压的扩展程序 → 选择 extension/ 文件夹）：
+https://github.com/jotenbai/AutoControl_mv3
+
+请保留该文件夹；Chrome 会持续读取它。完整步骤见仓库 README。
+
+---
+
 ⚡ AutoControl_mv3 — 非官方 Manifest V3 移植（快捷键 + 鼠标手势）
 
-原版 AutoControl 已从网上应用店下架。本扩展用新名称、新商店 ID，不是原条目的更新。
+原版 AutoControl 已从网上应用店下架。本扩展为社区移植。
 
 ⚠️ 不是原厂产品，与原作者无关。设置界面仍为英文。
-放到网上应用店只是为了方便大家安装。如果对 AutoControl 原开发团队构成侵权，会下架。
 
-✨ 还能做的事
+✨ 从 GitHub 按上面方式安装后可用
 • 经原版 Windows 原生引擎处理快捷键与鼠标手势
-• 这些快捷键和手势在 Chrome 自带页面（chrome://，例如历史记录、书签、扩展程序）上也能生效。普通扩展做不到
+• 在 Chrome 自带页面（chrome://）上也能生效
 • 打开网址，包括 chrome:// 页面
 • 标签操作：切换、固定、静音、重新打开已关闭标签
 • 在普通网页上运行脚本 / ACtl（需打开「允许用户脚本」）
 • 导入 / 导出设置（.acs）
 
-🔧 安装
-1. 从 Chrome 网上应用店安装
-2. 打开扩展 → Install 原生组件 → 运行安装程序
-3. 若提示 native host forbidden：运行 Allow-AutoControl_mv3-native.bat，然后重载
+🔧 安装（仅 GitHub）
+1. 克隆或下载 https://github.com/jotenbai/AutoControl_mv3
+2. chrome://extensions → 开发者模式 → 加载已解压的扩展程序 → 选择 extension/ 文件夹
+3. 打开扩展 → Install 原生组件
 4. 详细信息里打开「允许用户脚本」
-5. 安装后已有示例快捷键，可在扩展程序选项里改。完整列表：https://github.com/jotenbai/AutoControl_mv3#预装快捷键首次安装
-
-🐙 开源
-本扩展已在 GitHub 开源：
-https://github.com/jotenbai/AutoControl_mv3
-欢迎到 Issue 反馈问题，也欢迎提 PR（只写商店评论的话，我们不太方便跟进）。
-
-📌 为什么要移植
-Manifest V3 拿掉了常驻后台页，原团队停更。本构建把同一套混淆逻辑跑在 Service Worker 上。Chrome 148+ 的悬停区域条件失效（原生无障碍命中测试问题，MV2/MV3 一样）。
+5. 示例快捷键：https://github.com/jotenbai/AutoControl_mv3#预装快捷键首次安装
 
 🔒 隐私
-设置只存在本机。匿名用量默认关闭，可在高级选项里打开。政策：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
+设置只存在本机。政策：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
 
 ===== 日本語 =====
+⛔ ストア版は動作しません — Chrome ウェブストアからインストールしないでください。
+
+ネイティブのキーボード／マウスフックは、同一 Chrome プロファイル上で別の拡張機能 ID と安全に共存できません。ストア掲載は取りやめました（ページが残っていても無視してください）。
+
+✅ GitHub からインストールしてください（パッケージ化されていない拡張機能を読み込む → extension/ フォルダ）：
+https://github.com/jotenbai/AutoControl_mv3
+
+そのフォルダは残してください。手順の詳細は GitHub の README にあります。
+
+---
+
 ⚡ AutoControl_mv3 — 非公式 Manifest V3 移植（キーボードショートカット + マウスジェスチャ）
 
-元の AutoControl は Chrome ウェブストアから削除されました。新しい名前と新しいストア ID を使うコミュニティ移植であり、旧アイテムの更新ではありません。
+元の AutoControl は Chrome ウェブストアから削除されました。これはコミュニティによる移植です。
 
 ⚠️ 公式製品ではありません。元の作者とは無関係です。設定 UI は英語のままです。
-ストア掲載はインストールしやすくするためです。元の AutoControl 開発チームの権利を侵害する場合は取り下げます。
 
-✨ できること
+✨ GitHub から上記の方法で入れた場合に使える機能
 • 元の Windows ネイティブエンジンによるショートカットとマウスジェスチャ
-• それらのショートカットは Chrome 自身の chrome:// ページ（履歴・ブックマーク・拡張機能）でも効きます。通常の拡張機能ではできません
-• URL を開く（chrome:// ページを含む）
+• Chrome 自身の chrome:// ページでも動作
+• URL を開く（chrome:// を含む）
 • タブ操作：切り替え、ピン留め、ミュート、閉じたタブを開き直す
-• 通常のウェブページで Run Script / ACtl（「ユーザースクリプトを許可」が必要）
+• 通常ページで Run Script / ACtl（「ユーザースクリプトを許可」が必要）
 • 設定のインポート / エクスポート（.acs）
 
-🔧 セットアップ
-1. Chrome ウェブストアからインストール
-2. 拡張機能を開く → ネイティブコンポーネントを Install → インストーラを実行
-3. native host forbidden と出たら Allow-AutoControl_mv3-native.bat を実行してから再読み込み
+🔧 セットアップ（GitHub のみ）
+1. https://github.com/jotenbai/AutoControl_mv3 をクローンまたはダウンロード
+2. chrome://extensions → デベロッパーモード → パッケージ化されていない拡張機能を読み込む → extension/ を選択
+3. 拡張機能を開く → ネイティブコンポーネントを Install
 4. 詳細で「ユーザースクリプトを許可」をオン
-5. 初回インストールですでにサンプルショートカットが入っています。拡張機能のオプションで編集できます。一覧：https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
-
-🐙 オープンソース
-GitHub で公開しています：
-https://github.com/jotenbai/AutoControl_mv3
-Issue と Pull Request 歓迎です（ストアのレビューだけでは対応しづらいことがあります）。
-
-📌 移植の理由
-Manifest V3 で常駐バックグラウンドページがなくなり、元チームは開発を止めました。同じ難読化ロジックをサービスワーカーで動かしています。Chrome 148 以降のホバー領域条件はネイティブ側のヒットテスト不具合で効きません（MV2 も同じ）。
+5. サンプル：https://github.com/jotenbai/AutoControl_mv3#built-in-shortcuts-first-install
 
 🔒 プライバシー
-設定はパソコン内に保存。匿名テレメトリは既定オフ。方針：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md
+設定はパソコン内に保存。方針：https://github.com/jotenbai/AutoControl_mv3/blob/master/webstore/privacy.md

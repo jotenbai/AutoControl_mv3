@@ -4,7 +4,7 @@
 
 Unofficial Manifest V3 port of the old **AutoControl** extension (original store ID [`lkaihdpfpifdlgoapbfocpmekbokmcfd`](https://chromewebstore.google.com/detail/autocontrol-keyboard-shor/lkaihdpfpifdlgoapbfocpmekbokmcfd/)). This fork is named **AutoControl_mv3** so it is not an update of that listing. Docs mirror: [alex-302.github.io/AutoControl_mv3](https://alex-302.github.io/AutoControl_mv3/). If that site is gone, use [`reference/Docs/autocontrol.app-site/`](reference/Docs/autocontrol.app-site/). Do not use the old website — the domain was re-registered.
 
-Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). Chrome Web Store listing is **in testing** (not recommended for normal install yet). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
+Repo: [jotenbai/AutoControl_mv3](https://github.com/jotenbai/AutoControl_mv3). **Install from GitHub only** (Load unpacked). A Chrome Web Store build was tried and **abandoned** — a second extension ID fights the native LL hooks (window-minimize storms). Archived store copy: [`webstore/`](webstore/) (see `description.txt`). Privacy: [`webstore/privacy.md`](webstore/privacy.md).
 
 ---
 
@@ -18,11 +18,9 @@ The bigger difference versus other shortcut extensions: your shortcuts and gestu
 
 Run Script is different: Chrome still forbids running scripts **inside** `chrome://` and the Web Store (same as Tampermonkey). A background script can still call ACtl while you are on those pages, but it cannot read or change the page itself. The options UI already has samples such as **Example 1: Download all images** — try them on a normal `https` page with **Allow user scripts** on.
 
-The Chrome Web Store listing is only so people can install it easily. If it infringes the original AutoControl authors’ rights, it will be taken down.
+### Install (Load unpacked — only supported method)
 
-### Install (Load unpacked — recommended)
-
-The store listing is **still in a testing phase**. Install from this repository for now, and keep the `extension/` folder (Chrome keeps reading it).
+Do **not** use the Chrome Web Store build if you still see one. Install from this repository and keep the `extension/` folder (Chrome keeps reading it).
 
 **Download**
 
@@ -48,7 +46,7 @@ Logs are **off** by default. Turn them on in **Extension options → Advanced Op
 
 After in-app Install you can delete `reference/AutoControl_native/original/*.exe` from a git checkout. The extension deploys from `extension/file69.dat` and `file76.dat`.
 
-Developers packaging a store ZIP: `.\package.ps1` (strips the original `key`, includes `_locales`). Not an end-user install step.
+Developers: `.\package.ps1` can still make an archival ZIP (strips `key`). Not an end-user install step.
 
 ### Built-in shortcuts (first install)
 
@@ -94,7 +92,7 @@ If the pane never finishes: reload the extension; confirm both exes and `AutoCon
 | Path                          | What                                                                                                         |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `extension/`                  | Load this as unpacked. Also the source `package.ps1` zips.                                                   |
-| `webstore/`                   | Store listing copy (description, privacy, permission text). Not in the ZIP.                                  |
+| `webstore/`                   | Archived store copy (description steers to GitHub; privacy, permissions). Not in the ZIP.                   |
 | `reference/`                  | Unmodified snapshot of [Alex-302/AutoControl_mv3](https://github.com/Alex-302/AutoControl_mv3). Do not edit. |
 | `Test/`                       | In-browser API test and CDP helpers.                                                                         |
 | `AGENTS.md`                   | Working notes for people changing the port.                                                                  |
@@ -126,11 +124,9 @@ Chrome 自己改不了全局快捷键，也加不了鼠标手势。AutoControl �
 
 Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店里跑脚本（和 Tampermonkey 一样）。后台脚本在这些页面上仍能调用 ACtl，但不能读、改页面本身。扩展程序选项里已有示例，例如 **Example 1: Download all images**——打开 **允许用户脚本**，在普通 `https` 页上试。
 
-放到网上应用店只是为了方便安装。如果对 AutoControl 原开发团队构成侵权，会下架。
+### 安装（加载已解压 — 唯一支持方式）
 
-### 安装（加载已解压 — 推荐）
-
-商店上架**仍在测试阶段**，请先从本仓库安装，并保留 `extension/` 文件夹（Chrome 一直要读这个目录）。
+**不要**使用 Chrome 网上应用店版本（若还能看到）。请从本仓库安装，并保留 `extension/` 文件夹（Chrome 一直要读这个目录）。商店版曾尝试上架，但第二套扩展 ID 会与原生钩子冲突（窗口狂最小化），**已放弃**。归档文案在 [`webstore/`](webstore/)（见 `description.txt`）。
 
 **下载**
 
@@ -156,7 +152,7 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 
 应用内 Install 成功后，git 检出里的 `reference/AutoControl_native/original/*.exe` 可以删。扩展从 `extension/file69.dat` 和 `file76.dat` 部署。
 
-开发者打商店 ZIP：`.\package.ps1`（会去掉原版 `key`，打进 `_locales`）。不是给普通用户的安装步骤。
+开发者：`.\package.ps1` 仍可打归档 ZIP（会去掉 `key`）。不是给普通用户的安装步骤。
 
 ### 预装快捷键（首次安装）
 
@@ -202,7 +198,7 @@ Run Script 不是一回事：Chrome **禁止**在 `chrome://` 和网上应用店
 | 路径                          | 用途                                                                                       |
 | ----------------------------- | ------------------------------------------------------------------------------------------ |
 | `extension/`                  | 加载已解压时选这里；`package.ps1` 也只打这个目录                                           |
-| `webstore/`                   | 商店文案（说明、隐私、权限理由），不打进 ZIP                                               |
+| `webstore/`                   | 商店文案归档（`description.txt` 指向 GitHub；隐私、权限理由），不打进 ZIP                  |
 | `reference/`                  | [Alex-302/AutoControl_mv3](https://github.com/Alex-302/AutoControl_mv3) 的未改快照，不要改 |
 | `Test/`                       | 页内 API 自测和 CDP 脚本                                                                   |
 | `AGENTS.md`                   | 给改移植代码的人看的工作笔记                                                               |

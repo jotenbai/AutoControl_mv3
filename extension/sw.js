@@ -1403,12 +1403,9 @@
   /**
    * After a successful native handshake, append this extension's origin to
    * AutoControl.manifest allowed_origins (type 250 write). No-op when the
-   * original AutoControl ID is already listed. For a Chrome Web Store ID
-   * that was never in the installer whitelist, connectNative fails with
-   * "forbidden" BEFORE this can run — see __acOfferNativeOriginPatcher.
-   * Reinstall/Repair rewrites the manifest from the installer defaults and
-   * DROPS the store origin — user must re-run Allow-*.bat (or click Install
-   * again, which re-offers the bat on a user gesture).
+   * original AutoControl ID is already listed. CWS / alternate IDs are not
+   * supported (LL-hook fights); supported install = Load unpacked with the
+   * original manifest `key`.
    */
   function __acEnsureNativeOrigin() {
     try {
@@ -1434,89 +1431,34 @@
   }
 
   /**
-   * Offer Allow-AutoControl_mv3-native.bat for non-original extension IDs.
-   * @param {string} [reason]
-   * @param {{force?: boolean, saveAs?: boolean, download?: boolean}} [opts]
-   *   download — true ONLY from a page user-gesture (Install / Allow button).
-   *     chrome.downloads.download WITHOUT a gesture throws
-   *     "This function must be called during a user gesture" (CWS /
-   *     connectNative-forbidden path used to hit that from the SW).
-   *   Without download: log + notification only (safe from onDisconnect).
+   * Warn when connectNative is forbidden for a non-original extension ID.
+   * Store / alternate IDs are unsupported (LL-hook fights). No Allow-bat.
    */
   function __acOfferNativeOriginPatcher(reason, opts) {
     try {
       opts = opts || {};
       const force = !!opts.force;
-      const doDownload = !!opts.download;
       if (!force && self.__acOriginPatcherOffered) return;
       self.__acOriginPatcherOffered = true;
       const origin = 'chrome-extension://' + chrome.runtime.id + '/';
       const isAltId = chrome.runtime.id !== 'lkaihdpfpifdlgoapbfocpmekbokmcfd';
-      console.warn('[AC-MV3] Native origin patcher', reason || '', origin,
-        'force=' + force + ' download=' + doDownload + ' altId=' + isAltId);
-
-      if (doDownload) {
-        const bat = [
-          '@echo off',
-          'setlocal',
-          'echo AutoControl_mv3 — allow this extension for the native host',
-          'echo Origin: ' + origin,
-          'set "MAN=%LOCALAPPDATA%\\AutoControl\\AutoControl.manifest"',
-          'if not exist "%MAN%" (',
-          '  echo Native host not installed yet. Run Native-Component.exe first,',
-          '  echo then run this bat again.',
-          '  pause',
-          '  exit /b 1',
-          ')',
-          'powershell -NoProfile -ExecutionPolicy Bypass -Command ^',
-          '  "$p=$env:LOCALAPPDATA+\'\\AutoControl\\AutoControl.manifest\';" ^',
-          '  "$j=Get-Content -Raw -Encoding UTF8 $p | ConvertFrom-Json;" ^',
-          '  "$o=\'' + origin + '\';" ^',
-          '  "$list=@($j.allowed_origins);" ^',
-          '  "if ($list -contains $o) { Write-Host Already allowed $o; exit 0 }" ^',
-          '  "$j.allowed_origins=$list+$o;" ^',
-          '  "$out=($j | ConvertTo-Json -Compress);" ^',
-          '  "[IO.File]::WriteAllText($p,$out,(New-Object Text.UTF8Encoding $false));" ^',
-          '  "Write-Host Added $o"',
-          'echo.',
-          'echo Done. Reload AutoControl_mv3 on chrome://extensions.',
-          'pause',
-          ''
-        ].join('\r\n');
-        const url = 'data:application/octet-stream;base64,' + btoa(unescape(encodeURIComponent(bat)));
-        const saveAs = opts.saveAs === true;
-        if (chrome.downloads && chrome.downloads.download) {
-          chrome.downloads.download({
-            url,
-            filename: 'Allow-AutoControl_mv3-native.bat',
-            saveAs,
-            conflictAction: 'uniquify'
-          }, id => {
-            const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
-            if (err) console.warn('[AC-MV3] Allow-bat download failed:', err);
-            else console.log('[AC-MV3] Allow-bat download id=', id, 'saveAs=', saveAs);
-          });
-        }
-      }
-
+      console.warn('[AC-MV3] Native origin gate', reason || '', origin,
+        'force=' + force + ' altId=' + isAltId);
+      if (!isAltId) return;
       try {
         chrome.notifications.create('ac-native-origin-' + Date.now(), {
           type: 'basic',
           iconUrl: chrome.runtime.getURL('AutoCtrl/logo32.png'),
-          title: 'AutoControl_mv3 — allow native host',
-          message: doDownload
-            ? (isAltId
-              ? 'Run Allow-AutoControl_mv3-native.bat from Downloads (AFTER Native-Component), then reload.'
-              : 'Save and run Allow-AutoControl_mv3-native.bat, then reload.')
-            : 'This extension ID is not in the native whitelist. Open options → Install or click “Allow this extension ID”, run the bat, then reload.'
+          title: 'AutoControl_mv3 — unsupported extension ID',
+          message: 'Use GitHub → Load unpacked → extension/ (keep the original manifest key). Chrome Web Store / other IDs are not supported.'
         }, () => { void chrome.runtime.lastError; });
       } catch (e2) {}
     } catch (e) {
-      console.warn('[AC-MV3] Origin patcher offer failed:', e && e.message);
+      console.warn('[AC-MV3] Origin gate notice failed:', e && e.message);
     }
   }
 
-  /** True when this build is not the original AutoControl store ID. */
+  /** True when this build is not the original AutoControl ID (unsupported). */
   function __acNeedsNativeOriginPatch() {
     return chrome.runtime.id !== 'lkaihdpfpifdlgoapbfocpmekbokmcfd';
   }
@@ -3435,19 +3377,14 @@
         sendRes({ connected: !!connected, handshakeDone: !!handshakeDone, port: !!port });
         return true;
       case "patchNativeOrigin":
-        // Page Install / "Allow native ID" button (user gesture) — download
-        // Allow-*.bat. Must NOT download from connectNative-forbidden alone
-        // (no gesture → chrome.downloads throws / lastError spam).
+        // Legacy cmd from older options pages; bat download removed (CWS abandoned).
         self.__acOriginPatcherOffered = false;
-        __acOfferNativeOriginPatcher(msg.reason || 'page-request', {
-          force: true,
-          download: true,
-          saveAs: !!msg.saveAs
-        });
+        __acOfferNativeOriginPatcher(msg.reason || 'page-request', { force: true });
         sendRes({
           ok: true,
           needsPatch: __acNeedsNativeOriginPatch(),
-          extensionId: chrome.runtime.id
+          extensionId: chrome.runtime.id,
+          supported: !__acNeedsNativeOriginPatch()
         });
         return true;
       case "sandboxMessage":
